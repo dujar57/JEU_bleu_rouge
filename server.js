@@ -1,12 +1,29 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const mongoose = require('mongoose');
+const { router: authRouter } = require('./routes/auth');
+const User = require('./models/User');
+const Game = require('./models/Game');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+// Connexion à MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_rouge', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connecté à MongoDB'))
+.catch(err => console.error('❌ Erreur de connexion MongoDB:', err));
+
+// Routes d'authentification
+app.use('/api/auth', authRouter);
 
 // Servir les fichiers statiques depuis le dossier "public"
 app.use(express.static(path.join(__dirname, 'public')));
@@ -78,14 +95,15 @@ io.on('connection', (socket) => {
   // ==========================
   // EVENT: CRÉER UNE PARTIE
   // ==========================
-  socket.on('create_game', (data) => {
-    const { pseudo, realLifeInfo } = data;
+  socket.on('create_game', async (data) => {
+    const { pseudo, realLifeInfo, userId } = data;
     const gameCode = generateGameCode();
 
     games[gameCode] = {
       status: 'LOBBY',
       timer: 0,
       nextEventTime: null,
+      userId: userId || null, // ID de l'utilisateur créateur
       players: [
         {
           socketId: socket.id,
@@ -99,6 +117,28 @@ io.on('connection', (socket) => {
         }
       ]
     };
+
+    // Sauvegarder la partie dans la base de données si l'utilisateur est connecté
+    if (userId) {
+      try {
+        const gameDoc = new Game({
+          gameId: gameCode,
+          userId: userId,
+          playerName: pseudo,
+          status: 'waiting',
+          players: [{
+            socketId: socket.id,
+            name: pseudo,
+            team: null,
+            joinedAt: new Date()
+          }]
+        });
+        await gameDoc.save();
+        console.log(`💾 Partie ${gameCode} sauvegardée pour l'utilisateur ${userId}`);
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la partie:', error);
+      }
+    }
 
     socket.join(gameCode);
     console.log(`🎮 Partie créée : ${gameCode} par ${pseudo}`);
@@ -154,7 +194,7 @@ io.on('connection', (socket) => {
   // ==========================
   // EVENT: LANCER LA PARTIE
   // ==========================
-  socket.on('start_game', (data) => {
+  socket.on('start_game', async (data) => {
     const { gameCode } = data;
     const game = games[gameCode];
 
@@ -201,6 +241,26 @@ io.on('connection', (socket) => {
     game.players = [...bleus, ...rouges];
     game.status = 'PLAYING';
     game.nextEventTime = Date.now() + 3600000; // 1 heure (en millisecondes)
+
+    // Mettre à jour la partie dans la base de données
+    if (game.userId) {
+      try {
+        await Game.findOneAndUpdate(
+          { gameId: gameCode },
+          { 
+            status: 'playing',
+            players: game.players.map(p => ({
+              socketId: p.socketId,
+              name: p.pseudo,
+              team: p.team,
+              joinedAt: p.joinedAt || new Date()
+            }))
+          }
+        );
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de la partie:', error);
+      }
+    }
 
     console.log(`🚀 La partie ${gameCode} a commencé !`);
 
