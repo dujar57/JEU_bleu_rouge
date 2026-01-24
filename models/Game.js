@@ -37,7 +37,15 @@ const gameSchema = new mongoose.Schema({
   finishedAt: {
     type: Date,
     default: null
+  },
+  // Date d'expiration automatique (utilisé par MongoDB TTL)
+  expireAt: {
+    type: Date,
+    default: null
   }
 });
+
+// Index TTL : supprime automatiquement les documents 1 jour après la date 'expireAt'
+gameSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Game', gameSchema);

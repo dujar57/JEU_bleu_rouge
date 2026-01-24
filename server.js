@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const { router: authRouter } = require('./routes/auth');
 const User = require('./models/User');
 const Game = require('./models/Game');
+const { endGame, cleanupOldGames } = require('./utils/gameCleanup');
 
 const app = express();
 app.use(cors());
@@ -19,11 +20,25 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('✅ Connecté à MongoDB'))
+.then(() => {
+  console.log('✅ Connecté à MongoDB');
+  
+  // Nettoyage automatique des anciennes parties toutes les 6 heures
+  setInterval(() => {
+    cleanupOldGames();
+  }, 6 * 60 * 60 * 1000); // 6 heures en millisecondes
+  
+  // Premier nettoyage au démarrage
+  cleanupOldGames();
+})
 .catch(err => console.error('❌ Erreur de connexion MongoDB:', err));
 
 // Routes d'authentification
 app.use('/api/auth', authRouter);
+
+// Routes de gestion des parties
+const gameRouter = require('./routes/game');
+app.use('/api/game', gameRouter);
 
 // Servir les fichiers statiques depuis le dossier "public"
 app.use(express.static(path.join(__dirname, 'public')));
