@@ -70,11 +70,10 @@ function createGame() {
         return;
     }
     
-    socket.emit('create_game', { pseudo, realLifeInfo });
-}
+    // Récupérer l'userId si l'utilisateur est connecté
+    const userId = window.getCurrentUserId ? window.getCurrentUserId() : null;
 
-// ==========================================
-// REJOINDRE UNE PARTIE
+    socket.emit('create_game', { pseudo, realLifeInfo, userId });
 // ==========================================
 
 function joinGame() {
