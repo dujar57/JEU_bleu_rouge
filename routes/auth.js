@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 // Middleware pour vérifier le token
 const auth = async (req, res, next) => {
@@ -41,21 +42,35 @@ router.post('/register', async (req, res) => {
     
     // Créer l'utilisateur
     const user = new User({ username, email, password });
+    
+    // Générer le token de vérification email
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    
     await user.save();
     
-    // Créer le token
+    // Envoyer l'email de vérification
+    const emailSent = await sendVerificationEmail(user, verificationToken);
+    
+    if (!emailSent) {
+      console.warn('⚠️ Email de vérification non envoyé, mais le compte est créé');
+    }
+
+    // Créer le token JWT (l'utilisateur peut se connecter mais certaines fonctionnalités nécessitent la vérification)
     const token = jwt.sign(
-      { userId: user._id }, 
+      { userId: user._id },
       process.env.JWT_SECRET || 'votre_secret_jwt_temporaire',
       { expiresIn: '7d' }
     );
-    
+
     res.status(201).json({
-      message: 'Compte créé avec succès',
+      message: 'Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.',
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
+        emailVerified: user.emailVerified,
         gamesPlayed: user.gamesPlayed,
         gamesWon: user.gamesWon
       },
@@ -123,6 +138,73 @@ router.get('/profile', auth, async (req, res) => {
 // Déconnexion
 router.post('/logout', auth, async (req, res) => {
   res.json({ message: 'Déconnexion réussie' });
+});
+
+// Vérifier l'email avec le token
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token de vérification manquant' });
+    }
+    
+    // Trouver l'utilisateur avec ce token
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() } // Token non expiré
+    });
+    
+    if (!user) {
+      return res.status(400).json({ 
+        error: 'Token invalide ou expiré. Veuillez demander un nouveau lien de vérification.' 
+      });
+    }
+    
+    // Vérifier l'email
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+    
+    // Envoyer l'email de bienvenue
+    await sendWelcomeEmail(user);
+    
+    res.json({ 
+      message: 'Email vérifié avec succès ! Vous pouvez maintenant vous connecter.',
+      success: true
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la vérification de l\'email: ' + error.message });
+  }
+});
+
+// Renvoyer l'email de vérification
+router.post('/resend-verification', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    if (user.emailVerified) {
+      return res.status(400).json({ error: 'Votre email est déjà vérifié' });
+    }
+    
+    // Générer un nouveau token
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    await user.save();
+    
+    // Envoyer l'email
+    const emailSent = await sendVerificationEmail(user, verificationToken);
+    
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email' });
+    }
+    
+    res.json({ message: 'Email de vérification renvoyé avec succès' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors du renvoi de l\'email: ' + error.message });
+  }
 });
 
 module.exports = { router, auth };

@@ -21,6 +21,18 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    default: null
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null
+  },
   gamesPlayed: {
     type: Number,
     default: 0

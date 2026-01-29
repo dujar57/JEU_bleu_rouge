@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification Email - Jeu Bleu Rouge</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .verification-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .verification-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .verification-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .verification-message {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .btn-redirect {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-redirect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div id="loading" style="display: block;">
+            <div class="loading"></div>
+            <div class="verification-title">Vérification en cours...</div>
+            <div class="verification-message">Veuillez patienter pendant que nous vérifions votre email.</div>
+        </div>
+        
+        <div id="result" style="display: none;">
+            <!-- Contenu dynamique ajouté par JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        
+        // Récupérer le token depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        // Vérifier l'email
+        async function verifyEmail() {
+            if (!token) {
+                displayError('Token de vérification manquant');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/auth/verify-email?token=${token}`);
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+                
+                if (response.ok) {
+                    displaySuccess(data.message);
+                } else {
+                    displayError(data.error || 'Erreur lors de la vérification');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+                displayError('Erreur de connexion au serveur');
+                console.error('Erreur:', error);
+            }
+        }
+        
+        function displaySuccess(message) {
+            document.getElementById('result').innerHTML = `
+                <div class="verification-icon">✅</div>
+                <div class="verification-title">Email vérifié !</div>
+                <div class="success">${message}</div>
+                <div class="verification-message">
+                    Votre compte est maintenant actif. Vous pouvez vous connecter et commencer à jouer !
+                </div>
+                <a href="login.html" class="btn-redirect">Se connecter</a>
+            `;
+        }
+        
+        function displayError(message) {
+            document.getElementById('result').innerHTML = `
+                <div class="verification-icon">❌</div>
+                <div class="verification-title">Vérification échouée</div>
+                <div class="error">${message}</div>
+                <div class="verification-message">
+                    Le lien de vérification est peut-être expiré. Vous pouvez demander un nouveau lien après vous être connecté.
+                </div>
+                <a href="login.html" class="btn-redirect">Se connecter</a>
+            `;
+        }
+        
+        // Lancer la vérification au chargement de la page
+        window.addEventListener('DOMContentLoaded', verifyEmail);
+    </script>
+</body>
+</html>
