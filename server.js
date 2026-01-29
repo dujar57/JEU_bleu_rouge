@@ -15,13 +15,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Variable globale pour vérifier la connexion MongoDB
+let mongoConnected = false;
+
 // Connexion à MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_rouge', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_rouge')
 .then(() => {
   console.log('✅ Connecté à MongoDB');
+  mongoConnected = true;
   
   // Nettoyage automatique des anciennes parties toutes les 6 heures
   setInterval(() => {
@@ -31,7 +32,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_
   // Premier nettoyage au démarrage
   cleanupOldGames();
 })
-.catch(err => console.error('❌ Erreur de connexion MongoDB:', err));
+.catch(err => {
+  console.error('❌ Erreur de connexion MongoDB:', err);
+  console.log('⚠️ L\'application fonctionnera sans authentification (parties temporaires uniquement)');
+});
 
 // Routes d'authentification
 app.use('/api/auth', authRouter);
@@ -111,7 +115,14 @@ io.on('connection', (socket) => {
   // EVENT: CRÉER UNE PARTIE
   // ==========================
   socket.on('create_game', async (data) => {
+    console.log('📥 Reçu demande de création de partie:', data);
     const { pseudo, realLifeInfo, userId } = data;
+    
+    if (!pseudo) {
+      socket.emit('error', { message: 'Le pseudo est requis.' });
+      return;
+    }
+    
     const gameCode = generateGameCode();
 
     games[gameCode] = {
@@ -134,7 +145,7 @@ io.on('connection', (socket) => {
     };
 
     // Sauvegarder la partie dans la base de données si l'utilisateur est connecté
-    if (userId) {
+    if (userId && mongoConnected) {
       try {
         const gameDoc = new Game({
           gameId: gameCode,
@@ -258,7 +269,7 @@ io.on('connection', (socket) => {
     game.nextEventTime = Date.now() + 3600000; // 1 heure (en millisecondes)
 
     // Mettre à jour la partie dans la base de données
-    if (game.userId) {
+    if (game.userId && mongoConnected) {
       try {
         await Game.findOneAndUpdate(
           { gameId: gameCode },

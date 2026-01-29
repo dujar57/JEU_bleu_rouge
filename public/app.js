@@ -327,3 +327,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('🎮 Application Bleu vs Rouge initialisée');
 });
+
+}
