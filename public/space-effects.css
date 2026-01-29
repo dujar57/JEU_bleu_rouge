@@ -1,0 +1,291 @@
+/* ========================================
+   EFFETS SPATIAUX ET ANIMATIONS
+   ======================================== */
+
+/* Étoiles scintillantes */
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 3px white;
+    animation: twinkle linear infinite;
+    transition: transform 0.3s ease-out;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* Orbes/Planètes lumineuses */
+.space-orb {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    animation: floatOrb ease-in-out infinite;
+    transition: transform 0.5s ease-out;
+    opacity: 0.3;
+    filter: blur(20px);
+}
+
+.space-orb:nth-child(1) { background: radial-gradient(circle, rgba(0, 119, 255, 0.6) 0%, transparent 70%); }
+.space-orb:nth-child(2) { background: radial-gradient(circle, rgba(255, 0, 85, 0.6) 0%, transparent 70%); }
+.space-orb:nth-child(3) { background: radial-gradient(circle, rgba(138, 43, 226, 0.6) 0%, transparent 70%); }
+.space-orb:nth-child(4) { background: radial-gradient(circle, rgba(0, 255, 170, 0.6) 0%, transparent 70%); }
+.space-orb:nth-child(5) { background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, transparent 70%); }
+
+@keyframes floatOrb {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+/* Météores */
+.meteor {
+    position: absolute;
+    width: 2px;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 1), transparent);
+    animation: meteorFall 2s linear;
+    transform: rotate(45deg);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes meteorFall {
+    0% {
+        transform: rotate(45deg) translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(45deg) translateY(100vh);
+        opacity: 0;
+    }
+}
+
+/* Étincelles sur les boutons */
+.sparkle {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: sparkleAnim 1s ease-out forwards;
+    z-index: 9999;
+}
+
+@keyframes sparkleAnim {
+    0% {
+        transform: scale(0) translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) translateY(-50px);
+        opacity: 0;
+    }
+}
+
+/* Amélioration du fond spatial */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(2px 2px at 20% 30%, white, transparent),
+        radial-gradient(2px 2px at 60% 70%, white, transparent),
+        radial-gradient(1px 1px at 50% 50%, white, transparent),
+        radial-gradient(1px 1px at 80% 10%, white, transparent),
+        radial-gradient(2px 2px at 90% 60%, white, transparent),
+        radial-gradient(1px 1px at 33% 80%, white, transparent),
+        radial-gradient(1px 1px at 15% 90%, white, transparent);
+    background-size: 200% 200%;
+    animation: moveStars 100s linear infinite;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+}
+
+@keyframes moveStars {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+
+/* Effet néon sur les titres */
+.game-title {
+    text-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 30px currentColor,
+        0 0 40px currentColor;
+    animation: neonPulse 2s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+    0%, 100% { 
+        text-shadow: 
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 30px currentColor;
+    }
+    50% { 
+        text-shadow: 
+            0 0 20px currentColor,
+            0 0 30px currentColor,
+            0 0 40px currentColor,
+            0 0 50px currentColor;
+    }
+}
+
+/* Effet de brillance sur les boutons */
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        0 0 20px currentColor;
+}
+
+.btn-primary:hover {
+    box-shadow: 
+        0 10px 30px rgba(0, 119, 255, 0.5),
+        0 0 30px var(--blue-primary);
+}
+
+.btn-secondary:hover {
+    box-shadow: 
+        0 10px 30px rgba(255, 0, 85, 0.5),
+        0 0 30px var(--red-primary);
+}
+
+/* Animation d'apparition des écrans */
+.screen {
+    animation: screenFadeIn 0.6s ease-out;
+}
+
+@keyframes screenFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Effet de pulsation sur les éléments importants */
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* Effet holographique sur les cartes */
+.container, .info-box {
+    background: var(--dark-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.container::before, .info-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.container:hover::before, .info-box:hover::before {
+    left: 100%;
+}
+
+/* Particules flottantes additionnelles */
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+/* Effet de grille cyberpunk */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(0, 119, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 119, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: 0;
+    pointer-events: none;
+    animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(50px); }
+}
+
+/* Effet de scan lumineux */
+@keyframes scan {
+    0% { top: -100%; }
+    100% { top: 100%; }
+}
+
+.scan-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(0, 212, 255, 0.8),
+        transparent
+    );
+    animation: scan 3s linear infinite;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+}
