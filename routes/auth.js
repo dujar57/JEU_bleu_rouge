@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
+// const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 // Middleware pour vérifier le token
 const auth = async (req, res, next) => {
@@ -44,18 +44,16 @@ router.post('/register', async (req, res) => {
     const user = new User({ username, email, password });
     
     // Générer le token de vérification email
-    const verificationToken = generateVerificationToken();
-    user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    // const verificationToken = generateVerificationToken();
+    // user.emailVerificationToken = verificationToken;
+    // user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
     
     await user.save();
     
     // Envoyer l'email de vérification
-    const emailSent = await sendVerificationEmail(user, verificationToken);
+    // const emailSent = await sendVerificationEmail(user, verificationToken);
     
-    if (!emailSent) {
-      console.warn('⚠️ Email de vérification non envoyé, mais le compte est créé');
-    }
+    // if (!emailSent) { console.warn('Email skipped'); }
 
     // Créer le token JWT (l'utilisateur peut se connecter mais certaines fonctionnalités nécessitent la vérification)
     const token = jwt.sign(
@@ -189,16 +187,15 @@ router.post('/resend-verification', auth, async (req, res) => {
     }
     
     // Générer un nouveau token
-    const verificationToken = generateVerificationToken();
-    user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    // const verificationToken = generateVerificationToken();
+    // user.emailVerificationToken = verificationToken;
+    // user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
     await user.save();
     
     // Envoyer l'email
-    const emailSent = await sendVerificationEmail(user, verificationToken);
+    // const emailSent = await sendVerificationEmail(user, verificationToken);
     
-    if (!emailSent) {
-      return res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email' });
+    // if (!emailSent) { console.warn('Email skipped'); });
     }
     
     res.json({ message: 'Email de vérification renvoyé avec succès' });
@@ -208,3 +205,4 @@ router.post('/resend-verification', auth, async (req, res) => {
 });
 
 module.exports = { router, auth };
+
