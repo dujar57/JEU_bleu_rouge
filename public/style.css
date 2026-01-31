@@ -31,7 +31,7 @@ body {
     position: relative;
 }
 
-/* Particules animées en arrière-plan */
+/* Particules animÃ©es en arriÃ¨re-plan */
 .particles {
     position: fixed;
     top: 0;
@@ -86,7 +86,7 @@ body {
     justify-content: center;
 }
 
-/* Gestion des écrans */
+/* Gestion des Ã©crans */
 .screen {
     display: none;
     animation: fadeIn 0.5s ease-out;
@@ -449,7 +449,7 @@ body {
     font-size: 1.5rem;
 }
 
-/* Écran de jeu */
+/* Ã‰cran de jeu */
 .game-header {
     display: flex;
     justify-content: space-between;
@@ -711,7 +711,8 @@ body {
     }
 }
 
-/* Section Règles du jeu */
+
+/* Section RÃ¨gles du jeu */
 .rules-toggle {
     margin: 2rem 0 1rem 0;
     text-align: center;
@@ -796,7 +797,7 @@ body {
 }
 
 .rule-block li:before {
-    content: "�";
+    content: "â€¢";
     position: absolute;
     left: 0;
     color: #4a90e2;

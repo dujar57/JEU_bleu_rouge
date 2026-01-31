@@ -8,7 +8,7 @@ let myTeam = null;
 let myMunitions = 0;
 
 // ==========================================
-// GESTION DES ÉCRANS
+// GESTION DES Ã‰CRANS
 // ==========================================
 
 function showScreen(screenId) {
@@ -53,7 +53,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ==========================================
-// CRÉER UNE PARTIE
+// CRÃ‰ER UNE PARTIE
 // ==========================================
 
 function createGame() {
@@ -70,7 +70,7 @@ function createGame() {
         return;
     }
     
-    // Récupérer l'userId si l'utilisateur est connecté
+    // RÃ©cupÃ©rer l'userId si l'utilisateur est connectÃ©
     const userId = window.getCurrentUserId ? window.getCurrentUserId() : null;
 
     socket.emit('create_game', { pseudo, realLifeInfo, userId });
@@ -109,7 +109,7 @@ function startGame() {
 }
 
 // ==========================================
-// MISE À JOUR DU LOBBY
+// MISE Ã€ JOUR DU LOBBY
 // ==========================================
 
 function updateLobby(gameData) {
@@ -120,11 +120,11 @@ function updateLobby(gameData) {
     
     lobbyCode.textContent = currentGameCode;
     
-    // Met à jour le compteur de joueurs
+    // Met Ã  jour le compteur de joueurs
     const playerCount = gameData.players.length;
     countText.textContent = `${playerCount} joueur${playerCount > 1 ? 's' : ''} ${playerCount < 4 ? '(minimum 4)' : ''}`;
     
-    // Active/désactive le bouton Start
+    // Active/dÃ©sactive le bouton Start
     startBtn.disabled = playerCount < 4;
     
     // Affiche les joueurs
@@ -133,7 +133,7 @@ function updateLobby(gameData) {
         const playerCard = document.createElement('div');
         playerCard.className = 'player-card';
         playerCard.innerHTML = `
-            <div class="player-avatar">👤</div>
+            <div class="player-avatar">ðŸ‘¤</div>
             <div class="player-name">${escapeHtml(player.pseudo)}</div>
             <div class="player-info">${escapeHtml(player.realLifeInfo)}</div>
         `;
@@ -142,7 +142,7 @@ function updateLobby(gameData) {
 }
 
 // ==========================================
-// MISE À JOUR DU JEU
+// MISE Ã€ JOUR DU JEU
 // ==========================================
 
 function updateGame(gameData) {
@@ -152,7 +152,7 @@ function updateGame(gameData) {
     
     gameCode.textContent = currentGameCode;
     
-    // Met à jour le timer
+    // Met Ã  jour le timer
     if (gameData.nextEventTime) {
         updateTimer(gameData.nextEventTime);
     }
@@ -170,11 +170,11 @@ function updateGame(gameData) {
         }
         
         playerCard.innerHTML = `
-            <div class="game-player-avatar">${player.isAlive ? '👤' : '💀'}</div>
+            <div class="game-player-avatar">${player.isAlive ? 'ðŸ‘¤' : 'ðŸ’€'}</div>
             <div class="game-player-name">${escapeHtml(player.pseudo)}</div>
             <div class="game-player-info">${escapeHtml(player.realLifeInfo)}</div>
             <div class="player-status ${player.isAlive ? 'alive' : 'dead'}">
-                ${player.isAlive ? 'En vie' : 'Éliminé'}
+                ${player.isAlive ? 'En vie' : 'Ã‰liminÃ©'}
             </div>
         `;
         gamePlayers.appendChild(playerCard);
@@ -204,13 +204,13 @@ function updateTimer(endTime) {
         
         if (remaining === 0) {
             clearInterval(timerInterval);
-            showNotification('Temps écoulé !', 'error');
+            showNotification('Temps Ã©coulÃ© !', 'error');
         }
     }, 1000);
 }
 
 // ==========================================
-// AFFICHAGE DU RÔLE
+// AFFICHAGE DU RÃ”LE
 // ==========================================
 
 function displayRole(data) {
@@ -223,15 +223,15 @@ function displayRole(data) {
     const munitionsDiv = document.getElementById('role-munitions');
     const munitionsCount = document.getElementById('munitions-count');
     
-    // Affiche l'équipe
-    teamBadge.textContent = data.team === 'bleu' ? 'ÉQUIPE BLEUE' : 'ÉQUIPE ROUGE';
+    // Affiche l'Ã©quipe
+    teamBadge.textContent = data.team === 'bleu' ? 'Ã‰QUIPE BLEUE' : 'Ã‰QUIPE ROUGE';
     teamBadge.className = 'team-badge ' + data.team;
     
-    // Affiche le rôle
+    // Affiche le rÃ´le
     const roleNames = {
-        'representant': '👑 Représentant',
-        'tueur': '🔫 Tueur',
-        'lambda': '👤 Lambda'
+        'representant': 'ðŸ‘‘ ReprÃ©sentant',
+        'tueur': 'ðŸ”« Tueur',
+        'lambda': 'ðŸ‘¤ Lambda'
     };
     roleName.textContent = roleNames[data.role] || data.role;
     
@@ -243,11 +243,11 @@ function displayRole(data) {
         munitionsDiv.style.display = 'none';
     }
     
-    showNotification(`Vous êtes ${roleNames[data.role]} de l'équipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
+    showNotification(`Vous Ãªtes ${roleNames[data.role]} de l'Ã©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
 }
 
 // ==========================================
-// SÉCURITÉ
+// SÃ‰CURITÃ‰
 // ==========================================
 
 function escapeHtml(text) {
@@ -257,14 +257,14 @@ function escapeHtml(text) {
 }
 
 // ==========================================
-// ÉVÉNEMENTS SOCKET.IO
+// Ã‰VÃ‰NEMENTS SOCKET.IO
 // ==========================================
 
-// Partie créée
+// Partie crÃ©Ã©e
 socket.on('game_created', (data) => {
     currentGameCode = data.gameCode;
     showLobby();
-    showNotification('Partie créée avec succès !', 'success');
+    showNotification('Partie crÃ©Ã©e avec succÃ¨s !', 'success');
 });
 
 // Partie rejointe
@@ -274,7 +274,7 @@ socket.on('game_joined', (data) => {
     showNotification('Vous avez rejoint la partie !', 'success');
 });
 
-// Mise à jour de la salle
+// Mise Ã  jour de la salle
 socket.on('update_room', (gameData) => {
     if (gameData.status === 'LOBBY') {
         updateLobby(gameData);
@@ -284,7 +284,7 @@ socket.on('update_room', (gameData) => {
     }
 });
 
-// Rôle attribué
+// RÃ´le attribuÃ©
 socket.on('your_role', (data) => {
     displayRole(data);
 });
@@ -299,7 +299,7 @@ socket.on('error', (data) => {
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Gestion de la touche Entrée dans les formulaires
+    // Gestion de la touche EntrÃ©e dans les formulaires
     document.getElementById('create-pseudo').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('create-info').focus();
     });
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = e.target.value.toUpperCase();
     });
     
-    console.log('🎮 Application Bleu vs Rouge initialisée');
+    console.log('ðŸŽ® Application Bleu vs Rouge initialisÃ©e');
 });
 
 }
