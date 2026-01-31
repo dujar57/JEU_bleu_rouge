@@ -8,7 +8,7 @@ let myTeam = null;
 let myMunitions = 0;
 
 // ==========================================
-// GESTION DES ÃƒÆ’Ã¢â‚¬Â°CRANS
+// GESTION DES ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°CRANS
 // ==========================================
 
 function showScreen(screenId) {
@@ -53,7 +53,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ==========================================
-// CRÃƒÆ’Ã¢â‚¬Â°ER UNE PARTIE
+// CRÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°ER UNE PARTIE
 // ==========================================
 
 function createGame() {
@@ -70,7 +70,7 @@ function createGame() {
         return;
     }
     
-    // RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer l'userId si l'utilisateur est connectÃƒÆ’Ã‚Â©
+    // RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cupÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rer l'userId si l'utilisateur est connectÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©
     const userId = window.getCurrentUserId ? window.getCurrentUserId() : null;
 
     socket.emit('create_game', { pseudo, realLifeInfo, userId });
@@ -109,7 +109,7 @@ function startGame() {
 }
 
 // ==========================================
-// MISE ÃƒÆ’Ã¢â€šÂ¬ JOUR DU LOBBY
+// MISE ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ JOUR DU LOBBY
 // ==========================================
 
 function updateLobby(gameData) {
@@ -120,11 +120,11 @@ function updateLobby(gameData) {
     
     lobbyCode.textContent = currentGameCode;
     
-    // Met ÃƒÆ’Ã‚Â  jour le compteur de joueurs
+    // Met ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour le compteur de joueurs
     const playerCount = gameData.players.length;
     countText.textContent = `${playerCount} joueur${playerCount > 1 ? 's' : ''} ${playerCount < 4 ? '(minimum 4)' : ''}`;
     
-    // Active/dÃƒÆ’Ã‚Â©sactive le bouton Start
+    // Active/dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sactive le bouton Start
     startBtn.disabled = playerCount < 4;
     
     // Affiche les joueurs
@@ -133,7 +133,7 @@ function updateLobby(gameData) {
         const playerCard = document.createElement('div');
         playerCard.className = 'player-card';
         playerCard.innerHTML = `
-            <div class="player-avatar">ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤</div>
+            <div class="player-avatar">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤</div>
             <div class="player-name">${escapeHtml(player.pseudo)}</div>
             <div class="player-info">${escapeHtml(player.realLifeInfo)}</div>
         `;
@@ -142,7 +142,7 @@ function updateLobby(gameData) {
 }
 
 // ==========================================
-// MISE ÃƒÆ’Ã¢â€šÂ¬ JOUR DU JEU
+// MISE ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ JOUR DU JEU
 // ==========================================
 
 function updateGame(gameData) {
@@ -152,7 +152,7 @@ function updateGame(gameData) {
     
     gameCode.textContent = currentGameCode;
     
-    // Met ÃƒÆ’Ã‚Â  jour le timer
+    // Met ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour le timer
     if (gameData.nextEventTime) {
         updateTimer(gameData.nextEventTime);
     }
@@ -170,11 +170,11 @@ function updateGame(gameData) {
         }
         
         playerCard.innerHTML = `
-            <div class="game-player-avatar">${player.isAlive ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â€šÂ¬'}</div>
+            <div class="game-player-avatar">${player.isAlive ? 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤' : 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬'}</div>
             <div class="game-player-name">${escapeHtml(player.pseudo)}</div>
             <div class="game-player-info">${escapeHtml(player.realLifeInfo)}</div>
             <div class="player-status ${player.isAlive ? 'alive' : 'dead'}">
-                ${player.isAlive ? 'En vie' : 'ÃƒÆ’Ã¢â‚¬Â°liminÃƒÆ’Ã‚Â©'}
+                ${player.isAlive ? 'En vie' : 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°liminÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©'}
             </div>
         `;
         gamePlayers.appendChild(playerCard);
@@ -204,13 +204,13 @@ function updateTimer(endTime) {
         
         if (remaining === 0) {
             clearInterval(timerInterval);
-            showNotification('Temps ÃƒÆ’Ã‚Â©coulÃƒÆ’Ã‚Â© !', 'error');
+            showNotification('Temps ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©coulÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© !', 'error');
         }
     }, 1000);
 }
 
 // ==========================================
-// AFFICHAGE DU RÃƒÆ’Ã¢â‚¬ÂLE
+// AFFICHAGE DU RÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂLE
 // ==========================================
 
 function displayRole(data) {
@@ -225,15 +225,15 @@ function displayRole(data) {
     const munitionsDiv = document.getElementById('role-munitions');
     const munitionsCount = document.getElementById('munitions-count');
 
-    // Affiche l'ÃƒÂ©quipe
-    teamBadge.textContent = data.team === 'bleu' ? 'Ãƒâ€°QUIPE BLEUE' : 'Ãƒâ€°QUIPE ROUGE';
+    // Affiche l'ÃƒÆ’Ã‚Â©quipe
+    teamBadge.textContent = data.team === 'bleu' ? 'ÃƒÆ’Ã¢â‚¬Â°QUIPE BLEUE' : 'ÃƒÆ’Ã¢â‚¬Â°QUIPE ROUGE';
     teamBadge.className = 'team-badge ' + data.team;
 
-    // Affiche le rÃƒÂ´le
+    // Affiche le rÃƒÆ’Ã‚Â´le
     const roleNames = {
-        'representant': 'Ã°Å¸â€˜â€˜ ReprÃƒÂ©sentant',
-        'tueur': 'Ã°Å¸â€Â« Tueur',
-        'lambda': 'Ã°Å¸â€˜Â¤ Lambda'
+        'representant': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ ReprÃƒÆ’Ã‚Â©sentant',
+        'tueur': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â« Tueur',
+        'lambda': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ Lambda'
     };
     roleName.textContent = roleNames[data.role] || data.role;
 
@@ -245,19 +245,19 @@ function displayRole(data) {
         munitionsDiv.style.display = 'none';
     }
 
-    let notification = `Vous ÃƒÂªtes ${roleNames[data.role]} de l'ÃƒÂ©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`;
+    let notification = `Vous ÃƒÆ’Ã‚Âªtes ${roleNames[data.role]} de l'ÃƒÆ’Ã‚Â©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`;
     
     // Si le joueur est amoureux, afficher l'information
     if (data.isLover && data.loverInfo) {
-        notification += `\n\nÃ°Å¸â€™â€¢ Vous ÃƒÂªtes AMOUREUX de ${data.loverInfo.pseudo} (ÃƒÂ©quipe ${data.loverInfo.team === 'bleu' ? 'BLEUE' : 'ROUGE'}) !\nSi l'un de vous meurt, l'autre mourra de chagrin. Ã°Å¸â€™â€`;
+        notification += `\n\nÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â‚¬Â¢ Vous ÃƒÆ’Ã‚Âªtes AMOUREUX de ${data.loverInfo.pseudo} (ÃƒÆ’Ã‚Â©quipe ${data.loverInfo.team === 'bleu' ? 'BLEUE' : 'ROUGE'}) !\nSi l'un de vous meurt, l'autre mourra de chagrin. ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â‚¬Â`;
         
-        // CrÃƒÂ©er un badge amoureux dans l'interface
+        // CrÃƒÆ’Ã‚Â©er un badge amoureux dans l'interface
         const roleContainer = document.getElementById('role-info');
         if (roleContainer && !document.getElementById('lover-badge')) {
             const loverBadge = document.createElement('div');
             loverBadge.id = 'lover-badge';
             loverBadge.className = 'lover-badge';
-            loverBadge.innerHTML = `Ã°Å¸â€™â€¢ Amoureux de <strong>${data.loverInfo.pseudo}</strong> (${data.loverInfo.team})`;
+            loverBadge.innerHTML = `ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â‚¬Â¢ Amoureux de <strong>${data.loverInfo.pseudo}</strong> (${data.loverInfo.team})`;
             roleContainer.appendChild(loverBadge);
         }
     }
@@ -275,11 +275,11 @@ function displayRole(data) {
         munitionsDiv.style.display = 'none';
     }
     
-    showNotification(`Vous ÃƒÆ’Ã‚Âªtes ${roleNames[data.role]} de l'ÃƒÆ’Ã‚Â©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
+    showNotification(`Vous ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtes ${roleNames[data.role]} de l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
 }
 
 // ==========================================
-// SÃƒÆ’Ã¢â‚¬Â°CURITÃƒÆ’Ã¢â‚¬Â°
+// SÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°CURITÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°
 // ==========================================
 
 function escapeHtml(text) {
@@ -289,14 +289,14 @@ function escapeHtml(text) {
 }
 
 // ==========================================
-// ÃƒÆ’Ã¢â‚¬Â°VÃƒÆ’Ã¢â‚¬Â°NEMENTS SOCKET.IO
+// ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°VÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°NEMENTS SOCKET.IO
 // ==========================================
 
-// Partie crÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚Â©e
+// Partie crÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
 socket.on('game_created', (data) => {
     currentGameCode = data.gameCode;
     showLobby();
-    showNotification('Partie crÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚Â©e avec succÃƒÆ’Ã‚Â¨s !', 'success');
+    showNotification('Partie crÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e avec succÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s !', 'success');
 });
 
 // Partie rejointe
@@ -306,7 +306,7 @@ socket.on('game_joined', (data) => {
     showNotification('Vous avez rejoint la partie !', 'success');
 });
 
-// Mise ÃƒÆ’Ã‚Â  jour de la salle
+// Mise ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour de la salle
 socket.on('update_room', (gameData) => {
     if (gameData.status === 'LOBBY') {
         updateLobby(gameData);
@@ -316,7 +316,7 @@ socket.on('update_room', (gameData) => {
     }
 });
 
-// RÃƒÆ’Ã‚Â´le attribuÃƒÆ’Ã‚Â©
+// RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´le attribuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©
 socket.on('your_role', (data) => {
     displayRole(data);
 });
@@ -331,7 +331,7 @@ socket.on('error', (data) => {
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Gestion de la touche EntrÃƒÆ’Ã‚Â©e dans les formulaires
+    // Gestion de la touche EntrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e dans les formulaires
     document.getElementById('create-pseudo').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('create-info').focus();
     });
@@ -357,12 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = e.target.value.toUpperCase();
     });
     
-    console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â® Application Bleu vs Rouge initialisÃƒÆ’Ã‚Â©e');
+    console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â® Application Bleu vs Rouge initialisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e');
 });
 
 }
 
-// Afficher/Masquer les rÃƒÂ¨gles du jeu
+// Afficher/Masquer les rÃƒÆ’Ã‚Â¨gles du jeu
 function toggleRules() {
     const rulesContent = document.getElementById('rules-content');
     const rulesBtn = document.querySelector('.btn-rules');
@@ -431,14 +431,14 @@ function sendMessage() {
     input.value = '';
 }
 
-// Fonction utilitaire pour Ã©chapper le HTML (sÃ©curitÃ©)
+// Fonction utilitaire pour ÃƒÂ©chapper le HTML (sÃƒÂ©curitÃƒÂ©)
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// GÃ©rer la touche EntrÃ©e dans le chat
+// GÃƒÂ©rer la touche EntrÃƒÂ©e dans le chat
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {

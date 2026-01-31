@@ -310,11 +310,30 @@ io.on('connection', (socket) => {
       player.anonymousNumber = index + 1;
     });
 
-    // ÉTAPE 4 : Désigner les AMOUREUX (si au moins 6 joueurs)
+    // ÉTAPE 4 : Désigner les TRAÎTRES (si au moins 8 joueurs)
+    if (game.players.length >= 8) {
+      // Choisir un joueur de chaque équipe (sauf les représentants et tueurs)
+      const bleusEligibles = bleus.filter(p => p.role === 'lambda');
+      const rougesEligibles = rouges.filter(p => p.role === 'lambda');
+      
+      if (bleusEligibles.length > 0 && rougesEligibles.length > 0) {
+        const traitre1 = bleusEligibles[Math.floor(Math.random() * bleusEligibles.length)];
+        const traitre2 = rougesEligibles[Math.floor(Math.random() * rougesEligibles.length)];
+        
+        traitre1.isTraitor = true;
+        traitre1.traitorPartnerSocketId = traitre2.socketId;
+        traitre2.isTraitor = true;
+        traitre2.traitorPartnerSocketId = traitre1.socketId;
+        
+        console.log(`🎭 Traîtres : ${traitre1.pseudo} (infiltré ${traitre1.team}) & ${traitre2.pseudo} (infiltré ${traitre2.team})`);
+      }
+    }
+
+    // ÉTAPE 5 : Désigner les AMOUREUX (si au moins 6 joueurs et pas de traîtres en conflit)
     if (game.players.length >= 6) {
-      // Choisir un joueur de chaque équipe (sauf les représentants)
-      const bleusEligibles = bleus.filter(p => p.role !== 'representant');
-      const rougesEligibles = rouges.filter(p => p.role !== 'representant');
+      // Choisir un joueur de chaque équipe (sauf les représentants et les traîtres)
+      const bleusEligibles = bleus.filter(p => p.role !== 'representant' && !p.isTraitor);
+      const rougesEligibles = rouges.filter(p => p.role !== 'representant' && !p.isTraitor);
       
       if (bleusEligibles.length > 0 && rougesEligibles.length > 0) {
         const amoureux1 = bleusEligibles[Math.floor(Math.random() * bleusEligibles.length)];
@@ -353,15 +372,28 @@ io.on('connection', (socket) => {
 
     console.log(`🚀 La partie ${gameCode} a commencé !`);
 
-    // ÉTAPE 5 : Envoie du rôle SECRET à chaque joueur
+    // ÉTAPE 6 : Envoie du rôle SECRET à chaque joueur
     game.players.forEach(player => {
       const roleData = {
         team: player.team,
         role: player.role,
         munitions: player.munitions,
         isLover: player.isLover || false,
+        isTraitor: player.isTraitor || false,
         anonymousNumber: player.anonymousNumber
       };
+      
+      // Si le joueur est traître, envoyer l'info de son partenaire
+      if (player.isTraitor) {
+        const partner = game.players.find(p => p.socketId === player.traitorPartnerSocketId);
+        if (partner) {
+          roleData.traitorInfo = {
+            pseudo: partner.pseudo,
+            team: partner.team,
+            role: partner.role
+          };
+        }
+      }
       
       // Si le joueur est amoureux, envoyer l'info de son partenaire
       if (player.isLover) {

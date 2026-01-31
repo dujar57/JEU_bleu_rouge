@@ -1072,3 +1072,32 @@ body {
         text-align: center;
     }
 }
+
+/* Badge Traître */
+.traitor-badge {
+    background: linear-gradient(135deg, #8b4789 0%, #5a2a58 100%);
+    border: 2px solid #a855a8;
+    border-radius: 10px;
+    padding: 0.8rem 1.2rem;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.95rem;
+    animation: pulse-traitor 2s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(168, 85, 168, 0.5);
+}
+
+.traitor-badge strong {
+    color: #fff;
+    font-weight: bold;
+}
+
+@keyframes pulse-traitor {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(168, 85, 168, 0.5);
+    }
+    50% { 
+        transform: scale(1.03);
+        box-shadow: 0 0 30px rgba(168, 85, 168, 0.8);
+    }
+}
