@@ -8,7 +8,7 @@ let myTeam = null;
 let myMunitions = 0;
 
 // ==========================================
-// GESTION DES Ãƒâ€°CRANS
+// GESTION DES ÃƒÆ’Ã¢â‚¬Â°CRANS
 // ==========================================
 
 function showScreen(screenId) {
@@ -53,7 +53,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ==========================================
-// CRÃƒâ€°ER UNE PARTIE
+// CRÃƒÆ’Ã¢â‚¬Â°ER UNE PARTIE
 // ==========================================
 
 function createGame() {
@@ -70,7 +70,7 @@ function createGame() {
         return;
     }
     
-    // RÃƒÂ©cupÃƒÂ©rer l'userId si l'utilisateur est connectÃƒÂ©
+    // RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer l'userId si l'utilisateur est connectÃƒÆ’Ã‚Â©
     const userId = window.getCurrentUserId ? window.getCurrentUserId() : null;
 
     socket.emit('create_game', { pseudo, realLifeInfo, userId });
@@ -109,7 +109,7 @@ function startGame() {
 }
 
 // ==========================================
-// MISE Ãƒâ‚¬ JOUR DU LOBBY
+// MISE ÃƒÆ’Ã¢â€šÂ¬ JOUR DU LOBBY
 // ==========================================
 
 function updateLobby(gameData) {
@@ -120,11 +120,11 @@ function updateLobby(gameData) {
     
     lobbyCode.textContent = currentGameCode;
     
-    // Met ÃƒÂ  jour le compteur de joueurs
+    // Met ÃƒÆ’Ã‚Â  jour le compteur de joueurs
     const playerCount = gameData.players.length;
     countText.textContent = `${playerCount} joueur${playerCount > 1 ? 's' : ''} ${playerCount < 4 ? '(minimum 4)' : ''}`;
     
-    // Active/dÃƒÂ©sactive le bouton Start
+    // Active/dÃƒÆ’Ã‚Â©sactive le bouton Start
     startBtn.disabled = playerCount < 4;
     
     // Affiche les joueurs
@@ -133,7 +133,7 @@ function updateLobby(gameData) {
         const playerCard = document.createElement('div');
         playerCard.className = 'player-card';
         playerCard.innerHTML = `
-            <div class="player-avatar">Ã°Å¸â€˜Â¤</div>
+            <div class="player-avatar">ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤</div>
             <div class="player-name">${escapeHtml(player.pseudo)}</div>
             <div class="player-info">${escapeHtml(player.realLifeInfo)}</div>
         `;
@@ -142,7 +142,7 @@ function updateLobby(gameData) {
 }
 
 // ==========================================
-// MISE Ãƒâ‚¬ JOUR DU JEU
+// MISE ÃƒÆ’Ã¢â€šÂ¬ JOUR DU JEU
 // ==========================================
 
 function updateGame(gameData) {
@@ -152,7 +152,7 @@ function updateGame(gameData) {
     
     gameCode.textContent = currentGameCode;
     
-    // Met ÃƒÂ  jour le timer
+    // Met ÃƒÆ’Ã‚Â  jour le timer
     if (gameData.nextEventTime) {
         updateTimer(gameData.nextEventTime);
     }
@@ -170,11 +170,11 @@ function updateGame(gameData) {
         }
         
         playerCard.innerHTML = `
-            <div class="game-player-avatar">${player.isAlive ? 'Ã°Å¸â€˜Â¤' : 'Ã°Å¸â€™â‚¬'}</div>
+            <div class="game-player-avatar">${player.isAlive ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â€šÂ¬'}</div>
             <div class="game-player-name">${escapeHtml(player.pseudo)}</div>
             <div class="game-player-info">${escapeHtml(player.realLifeInfo)}</div>
             <div class="player-status ${player.isAlive ? 'alive' : 'dead'}">
-                ${player.isAlive ? 'En vie' : 'Ãƒâ€°liminÃƒÂ©'}
+                ${player.isAlive ? 'En vie' : 'ÃƒÆ’Ã¢â‚¬Â°liminÃƒÆ’Ã‚Â©'}
             </div>
         `;
         gamePlayers.appendChild(playerCard);
@@ -204,16 +204,18 @@ function updateTimer(endTime) {
         
         if (remaining === 0) {
             clearInterval(timerInterval);
-            showNotification('Temps ÃƒÂ©coulÃƒÂ© !', 'error');
+            showNotification('Temps ÃƒÆ’Ã‚Â©coulÃƒÆ’Ã‚Â© !', 'error');
         }
     }, 1000);
 }
 
 // ==========================================
-// AFFICHAGE DU RÃƒâ€LE
+// AFFICHAGE DU RÃƒÆ’Ã¢â‚¬ÂLE
 // ==========================================
 
 function displayRole(data) {
+    myAnonymousNumber = data.anonymousNumber;
+    document.getElementById('your-number').textContent = 'Joueur ' + data.anonymousNumber;
     myTeam = data.team;
     myRole = data.role;
     myMunitions = data.munitions || 0;
@@ -223,15 +225,15 @@ function displayRole(data) {
     const munitionsDiv = document.getElementById('role-munitions');
     const munitionsCount = document.getElementById('munitions-count');
 
-    // Affiche l'Ã©quipe
-    teamBadge.textContent = data.team === 'bleu' ? 'Ã‰QUIPE BLEUE' : 'Ã‰QUIPE ROUGE';
+    // Affiche l'ÃƒÂ©quipe
+    teamBadge.textContent = data.team === 'bleu' ? 'Ãƒâ€°QUIPE BLEUE' : 'Ãƒâ€°QUIPE ROUGE';
     teamBadge.className = 'team-badge ' + data.team;
 
-    // Affiche le rÃ´le
+    // Affiche le rÃƒÂ´le
     const roleNames = {
-        'representant': 'ðŸ‘‘ ReprÃ©sentant',
-        'tueur': 'ðŸ”« Tueur',
-        'lambda': 'ðŸ‘¤ Lambda'
+        'representant': 'Ã°Å¸â€˜â€˜ ReprÃƒÂ©sentant',
+        'tueur': 'Ã°Å¸â€Â« Tueur',
+        'lambda': 'Ã°Å¸â€˜Â¤ Lambda'
     };
     roleName.textContent = roleNames[data.role] || data.role;
 
@@ -243,19 +245,19 @@ function displayRole(data) {
         munitionsDiv.style.display = 'none';
     }
 
-    let notification = `Vous Ãªtes ${roleNames[data.role]} de l'Ã©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`;
+    let notification = `Vous ÃƒÂªtes ${roleNames[data.role]} de l'ÃƒÂ©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`;
     
     // Si le joueur est amoureux, afficher l'information
     if (data.isLover && data.loverInfo) {
-        notification += `\n\nðŸ’• Vous Ãªtes AMOUREUX de ${data.loverInfo.pseudo} (Ã©quipe ${data.loverInfo.team === 'bleu' ? 'BLEUE' : 'ROUGE'}) !\nSi l'un de vous meurt, l'autre mourra de chagrin. ðŸ’”`;
+        notification += `\n\nÃ°Å¸â€™â€¢ Vous ÃƒÂªtes AMOUREUX de ${data.loverInfo.pseudo} (ÃƒÂ©quipe ${data.loverInfo.team === 'bleu' ? 'BLEUE' : 'ROUGE'}) !\nSi l'un de vous meurt, l'autre mourra de chagrin. Ã°Å¸â€™â€`;
         
-        // CrÃ©er un badge amoureux dans l'interface
+        // CrÃƒÂ©er un badge amoureux dans l'interface
         const roleContainer = document.getElementById('role-info');
         if (roleContainer && !document.getElementById('lover-badge')) {
             const loverBadge = document.createElement('div');
             loverBadge.id = 'lover-badge';
             loverBadge.className = 'lover-badge';
-            loverBadge.innerHTML = `ðŸ’• Amoureux de <strong>${data.loverInfo.pseudo}</strong> (${data.loverInfo.team})`;
+            loverBadge.innerHTML = `Ã°Å¸â€™â€¢ Amoureux de <strong>${data.loverInfo.pseudo}</strong> (${data.loverInfo.team})`;
             roleContainer.appendChild(loverBadge);
         }
     }
@@ -273,11 +275,11 @@ function displayRole(data) {
         munitionsDiv.style.display = 'none';
     }
     
-    showNotification(`Vous ÃƒÂªtes ${roleNames[data.role]} de l'ÃƒÂ©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
+    showNotification(`Vous ÃƒÆ’Ã‚Âªtes ${roleNames[data.role]} de l'ÃƒÆ’Ã‚Â©quipe ${data.team === 'bleu' ? 'BLEUE' : 'ROUGE'} !`, 'success');
 }
 
 // ==========================================
-// SÃƒâ€°CURITÃƒâ€°
+// SÃƒÆ’Ã¢â‚¬Â°CURITÃƒÆ’Ã¢â‚¬Â°
 // ==========================================
 
 function escapeHtml(text) {
@@ -287,14 +289,14 @@ function escapeHtml(text) {
 }
 
 // ==========================================
-// Ãƒâ€°VÃƒâ€°NEMENTS SOCKET.IO
+// ÃƒÆ’Ã¢â‚¬Â°VÃƒÆ’Ã¢â‚¬Â°NEMENTS SOCKET.IO
 // ==========================================
 
-// Partie crÃƒÂ©ÃƒÂ©e
+// Partie crÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚Â©e
 socket.on('game_created', (data) => {
     currentGameCode = data.gameCode;
     showLobby();
-    showNotification('Partie crÃƒÂ©ÃƒÂ©e avec succÃƒÂ¨s !', 'success');
+    showNotification('Partie crÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚Â©e avec succÃƒÆ’Ã‚Â¨s !', 'success');
 });
 
 // Partie rejointe
@@ -304,7 +306,7 @@ socket.on('game_joined', (data) => {
     showNotification('Vous avez rejoint la partie !', 'success');
 });
 
-// Mise ÃƒÂ  jour de la salle
+// Mise ÃƒÆ’Ã‚Â  jour de la salle
 socket.on('update_room', (gameData) => {
     if (gameData.status === 'LOBBY') {
         updateLobby(gameData);
@@ -314,7 +316,7 @@ socket.on('update_room', (gameData) => {
     }
 });
 
-// RÃƒÂ´le attribuÃƒÂ©
+// RÃƒÆ’Ã‚Â´le attribuÃƒÆ’Ã‚Â©
 socket.on('your_role', (data) => {
     displayRole(data);
 });
@@ -329,7 +331,7 @@ socket.on('error', (data) => {
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Gestion de la touche EntrÃƒÂ©e dans les formulaires
+    // Gestion de la touche EntrÃƒÆ’Ã‚Â©e dans les formulaires
     document.getElementById('create-pseudo').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('create-info').focus();
     });
@@ -355,12 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.value = e.target.value.toUpperCase();
     });
     
-    console.log('Ã°Å¸Å½Â® Application Bleu vs Rouge initialisÃƒÂ©e');
+    console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â® Application Bleu vs Rouge initialisÃƒÆ’Ã‚Â©e');
 });
 
 }
 
-// Afficher/Masquer les rÃ¨gles du jeu
+// Afficher/Masquer les rÃƒÂ¨gles du jeu
 function toggleRules() {
     const rulesContent = document.getElementById('rules-content');
     const rulesBtn = document.querySelector('.btn-rules');
@@ -373,3 +375,77 @@ function toggleRules() {
         rulesBtn.classList.add('active');
     }
 }
+
+// Variables pour le chat
+let myAnonymousNumber = null;
+
+// Recevoir les messages du chat
+socket.on('chat_message', (data) => {
+    displayChatMessage(data);
+});
+
+// Afficher un message dans le chat
+function displayChatMessage(data) {
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message';
+    
+    // Marquer les messages du joueur actuel
+    if (data.playerNumber === myAnonymousNumber) {
+        messageDiv.classList.add('own-message');
+    }
+
+    const time = new Date(data.timestamp).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    messageDiv.innerHTML = `
+        <div class="chat-message-header">
+            <span class="chat-player">Joueur ${data.playerNumber}</span>
+            <span class="chat-time">${time}</span>
+        </div>
+        <div class="chat-text">${escapeHtml(data.message)}</div>
+    `;
+
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll automatique vers le bas
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Envoyer un message
+function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+
+    if (!message || !currentGameCode) return;
+
+    socket.emit('chat_message', {
+        gameCode: currentGameCode,
+        message: message
+    });
+
+    input.value = '';
+}
+
+// Fonction utilitaire pour Ã©chapper le HTML (sÃ©curitÃ©)
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// GÃ©rer la touche EntrÃ©e dans le chat
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+});

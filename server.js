@@ -304,6 +304,12 @@ io.on('connection', (socket) => {
     // Met à jour le tableau des joueurs
     game.players = [...bleus, ...rouges];
 
+    // ÉTAPE 3.5 : Attribuer des numéros anonymes aléatoires pour le chat
+    const shuffledForNumbers = [...game.players].sort(() => Math.random() - 0.5);
+    shuffledForNumbers.forEach((player, index) => {
+      player.anonymousNumber = index + 1;
+    });
+
     // ÉTAPE 4 : Désigner les AMOUREUX (si au moins 6 joueurs)
     if (game.players.length >= 6) {
       // Choisir un joueur de chaque équipe (sauf les représentants)
@@ -353,7 +359,8 @@ io.on('connection', (socket) => {
         team: player.team,
         role: player.role,
         munitions: player.munitions,
-        isLover: player.isLover || false
+        isLover: player.isLover || false,
+        anonymousNumber: player.anonymousNumber
       };
       
       // Si le joueur est amoureux, envoyer l'info de son partenaire
@@ -373,6 +380,34 @@ io.on('connection', (socket) => {
 
     // Met à jour la salle (sans révéler les rôles)
     updateRoom(gameCode);
+  });
+
+  // ==========================
+  // EVENT: MESSAGE CHAT
+  // ==========================
+  socket.on('chat_message', (data) => {
+    const { gameCode, message } = data;
+    const game = games[gameCode];
+
+    if (!game) return;
+    
+    // Trouver le joueur qui envoie le message
+    const player = game.players.find(p => p.socketId === socket.id);
+    if (!player || !player.isAlive) return;
+
+    // Message trop long ou vide
+    if (!message || message.trim().length === 0 || message.length > 200) return;
+
+    // Envoyer le message à tous les joueurs de la partie avec le numéro anonyme
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('chat_message', {
+        playerNumber: player.anonymousNumber,
+        message: message.trim(),
+        timestamp: Date.now()
+      });
+    });
+
+    console.log(`💬 Partie ${gameCode} - Joueur ${player.anonymousNumber}: ${message.substring(0, 50)}`);
   });
 
   // ==========================
