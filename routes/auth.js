@@ -195,8 +195,7 @@ router.post('/resend-verification', auth, async (req, res) => {
     // Envoyer l'email
     // const emailSent = await sendVerificationEmail(user, verificationToken);
     
-    // if (!emailSent) { console.warn('Email skipped'); });
-    }
+    // if (!emailSent) { console.warn('Email skipped'); }
     
     res.json({ message: 'Email de vérification renvoyé avec succès' });
   } catch (error) {
