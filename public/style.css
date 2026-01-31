@@ -861,3 +861,26 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Badge Amoureux */
+.lover-badge {
+    background: linear-gradient(135deg, #ff6b9d 0%, #c06c84 100%);
+    border: 2px solid #ff8fab;
+    border-radius: 10px;
+    padding: 0.8rem 1.2rem;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.95rem;
+    animation: heartbeat 1.5s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(255, 107, 157, 0.4);
+}
+
+.lover-badge strong {
+    color: #fff;
+    font-weight: bold;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}

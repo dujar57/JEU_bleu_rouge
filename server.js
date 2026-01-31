@@ -84,6 +84,39 @@ function generateGameCode() {
   return code;
 }
 
+// Fonction pour éliminer un joueur (et son amoureux si applicable)
+function killPlayer(game, targetPlayer, reason = 'éliminé') {
+  if (!targetPlayer.isAlive) return [];
+  
+  const deadPlayers = [];
+  targetPlayer.isAlive = false;
+  deadPlayers.push({
+    pseudo: targetPlayer.pseudo,
+    team: targetPlayer.team,
+    role: targetPlayer.role,
+    reason: reason
+  });
+  
+  console.log(`💀 ${targetPlayer.pseudo} (${targetPlayer.team} - ${targetPlayer.role}) a été ${reason}`);
+  
+  // Si le joueur était amoureux, son partenaire meurt aussi
+  if (targetPlayer.isLover && targetPlayer.loverSocketId) {
+    const lover = game.players.find(p => p.socketId === targetPlayer.loverSocketId);
+    if (lover && lover.isAlive) {
+      lover.isAlive = false;
+      deadPlayers.push({
+        pseudo: lover.pseudo,
+        team: lover.team,
+        role: lover.role,
+        reason: 'mort de chagrin 💔'
+      });
+      console.log(`💔 ${lover.pseudo} meurt de chagrin (amoureux de ${targetPlayer.pseudo})`);
+    }
+  }
+  
+  return deadPlayers;
+}
+
 // Envoie la mise à jour de la salle à tous les joueurs
 function updateRoom(gameCode) {
   const game = games[gameCode];
@@ -270,6 +303,25 @@ io.on('connection', (socket) => {
 
     // Met à jour le tableau des joueurs
     game.players = [...bleus, ...rouges];
+
+    // ÉTAPE 4 : Désigner les AMOUREUX (si au moins 6 joueurs)
+    if (game.players.length >= 6) {
+      // Choisir un joueur de chaque équipe (sauf les représentants)
+      const bleusEligibles = bleus.filter(p => p.role !== 'representant');
+      const rougesEligibles = rouges.filter(p => p.role !== 'representant');
+      
+      if (bleusEligibles.length > 0 && rougesEligibles.length > 0) {
+        const amoureux1 = bleusEligibles[Math.floor(Math.random() * bleusEligibles.length)];
+        const amoureux2 = rougesEligibles[Math.floor(Math.random() * rougesEligibles.length)];
+        
+        amoureux1.isLover = true;
+        amoureux1.loverSocketId = amoureux2.socketId;
+        amoureux2.isLover = true;
+        amoureux2.loverSocketId = amoureux1.socketId;
+        
+        console.log(`💕 Amoureux : ${amoureux1.pseudo} (${amoureux1.team}) ❤️ ${amoureux2.pseudo} (${amoureux2.team})`);
+      }
+    }
     game.status = 'PLAYING';
     game.nextEventTime = Date.now() + 3600000; // 1 heure (en millisecondes)
 
@@ -295,13 +347,28 @@ io.on('connection', (socket) => {
 
     console.log(`🚀 La partie ${gameCode} a commencé !`);
 
-    // ÉTAPE 4 : Envoie du rôle SECRET à chaque joueur
+    // ÉTAPE 5 : Envoie du rôle SECRET à chaque joueur
     game.players.forEach(player => {
-      io.to(player.socketId).emit('your_role', {
+      const roleData = {
         team: player.team,
         role: player.role,
-        munitions: player.munitions
-      });
+        munitions: player.munitions,
+        isLover: player.isLover || false
+      };
+      
+      // Si le joueur est amoureux, envoyer l'info de son partenaire
+      if (player.isLover) {
+        const lover = game.players.find(p => p.socketId === player.loverSocketId);
+        if (lover) {
+          roleData.loverInfo = {
+            pseudo: lover.pseudo,
+            team: lover.team,
+            role: lover.role
+          };
+        }
+      }
+      
+      io.to(player.socketId).emit('your_role', roleData);
     });
 
     // Met à jour la salle (sans révéler les rôles)
