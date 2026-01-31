@@ -47,6 +47,11 @@ app.use('/api/game', gameRouter);
 // Servir les fichiers statiques depuis le dossier "public"
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Rediriger la racine vers la page de chargement si le serveur vient de démarrer
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Serveur HTTP (HTTPS géré automatiquement par la plateforme de déploiement)
 const server = http.createServer(app);
 const io = new Server(server, {
