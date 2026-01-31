@@ -329,3 +329,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 }
+
+// Afficher/Masquer les règles du jeu
+function toggleRules() {
+    const rulesContent = document.getElementById('rules-content');
+    const rulesBtn = document.querySelector('.btn-rules');
+    
+    if (rulesContent.classList.contains('show')) {
+        rulesContent.classList.remove('show');
+        rulesBtn.classList.remove('active');
+    } else {
+        rulesContent.classList.add('show');
+        rulesBtn.classList.add('active');
+    }
+}

@@ -710,3 +710,153 @@ body {
         text-align: center;
     }
 }
+
+/* Section RÃ¨gles du jeu */
+.rules-toggle {
+    margin: 2rem 0 1rem 0;
+    text-align: center;
+}
+
+.btn-rules {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-rules:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.arrow-down {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-rules.active .arrow-down {
+    transform: rotate(180deg);
+}
+
+.rules-section {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+}
+
+.rules-section.show {
+    max-height: 2000px;
+    opacity: 1;
+    margin: 1rem 0 2rem 0;
+}
+
+.rules-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+}
+
+.rules-title {
+    text-align: center;
+    color: #f39c12;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.rule-block {
+    margin: 1.5rem 0;
+}
+
+.rule-block h4 {
+    color: #4a90e2;
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+}
+
+.rule-block ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.rule-block li {
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    position: relative;
+    line-height: 1.6;
+}
+
+.rule-block li:before {
+    content: "â€";
+    position: absolute;
+    left: 0;
+    color: #4a90e2;
+    font-weight: bold;
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.team-card {
+    border-radius: 10px;
+    padding: 1.5rem;
+    border: 2px solid;
+}
+
+.team-card h4 {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.team-blue {
+    background: rgba(74, 144, 226, 0.1);
+    border-color: #4a90e2;
+}
+
+.team-red {
+    background: rgba(231, 76, 60, 0.1);
+    border-color: #e74c3c;
+}
+
+.role-item {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.8rem;
+    margin: 0.8rem 0;
+    border-radius: 8px;
+}
+
+.role-item strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 1.1rem;
+}
+
+.role-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .rules-card {
+        padding: 1.5rem;
+    }
+    
+    .teams-grid {
+        grid-template-columns: 1fr;
+    }
+}

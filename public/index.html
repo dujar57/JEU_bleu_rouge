@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BvR - Bleu vs Rouge</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸŽ®</text></svg>">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="space-effects.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,10 +12,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Particules d'arrière-plan animées -->
+    <!-- Particules d'arriÃ¨re-plan animÃ©es -->
     <div class="particles" id="particles"></div>
     
-    <!-- Écran d'accueil -->
+    <!-- Ã‰cran d'accueil -->
     <div id="screen-welcome" class="screen active">
         <div class="container">
             <div class="logo-container">
@@ -24,43 +24,121 @@
                     <span class="vs">VS</span>
                     <span class="red-text">ROUGE</span>
                 </h1>
-                <p class="tagline">Infiltration • Déduction • Élimination</p>
+                <p class="tagline">Infiltration â€¢ DÃ©duction â€¢ Ã‰limination</p>
             </div>
             
             <div class="menu-buttons">
                 <button class="btn btn-primary" onclick="showCreateGame()">
-                    <span class="btn-icon">🎮</span>
-                    Créer une partie
+                    <span class="btn-icon">ðŸŽ®</span>
+                    CrÃ©er une partie
                 </button>
                 <button class="btn btn-secondary" onclick="showJoinGame()">
-                    <span class="btn-icon">🔗</span>
+                    <span class="btn-icon">ðŸ”—</span>
                     Rejoindre une partie
                 </button>
             </div>
-            
+
+            <!-- Section RÃ¨gles du jeu -->
+            <div class="rules-toggle">
+                <button class="btn btn-rules" onclick="toggleRules()">
+                    <span class="btn-icon">ðŸ"</span>
+                    RÃ¨gles du jeu
+                    <span class="arrow-down">â</span>
+                </button>
+            </div>
+
+            <div id="rules-content" class="rules-section hidden">
+                <div class="rules-card">
+                    <h3 class="rules-title">ðŸŽ Comment jouer ?</h3>
+                    
+                    <div class="rule-block">
+                        <h4>ðŸ" Principe</h4>
+                        <ul>
+                            <li>Deux Ãquipes s'affrontent : <strong class="blue-text">BLEUS</strong> vs <strong class="red-text">ROUGES</strong></li>
+                            <li>Chaque joueur connaÃt uniquement sa propre Ãquipe et son rÃle</li>
+                            <li><strong>Objectif :</strong> Ãliminer le reprÃsentant de l'Ãquipe adverse</li>
+                        </ul>
+                    </div>
+
+                    <div class="teams-grid">
+                        <div class="team-card team-blue">
+                            <h4>ðŸ"µ ÃQUIPE BLEUE</h4>
+                            <div class="role-item">
+                                <strong>ðŸ'' ReprÃsentant</strong>
+                                <p>Cible Ã  protÃger</p>
+                            </div>
+                            <div class="role-item">
+                                <strong>ðŸ" Tueur</strong>
+                                <p>1 munition pour Ãliminer</p>
+                            </div>
+                            <div class="role-item">
+                                <strong>ðŸ'¤ Lambdas</strong>
+                                <p>Membres de l'Ãquipe</p>
+                            </div>
+                        </div>
+
+                        <div class="team-card team-red">
+                            <h4>ðŸ" ÃQUIPE ROUGE</h4>
+                            <div class="role-item">
+                                <strong>ðŸ'' ReprÃsentant</strong>
+                                <p>Cible Ã  protÃger</p>
+                            </div>
+                            <div class="role-item">
+                                <strong>ðŸ" Tueur</strong>
+                                <p>1 munition pour Ãliminer</p>
+                            </div>
+                            <div class="role-item">
+                                <strong>ðŸ'¤ Lambdas</strong>
+                                <p>Membres de l'Ãquipe</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rule-block">
+                        <h4>âš"ï DÃroulement</h4>
+                        <ul>
+                            <li><strong>Phase d'infiltration :</strong> Discutez et dÃcouvrez qui sont vos alliÃs</li>
+                            <li><strong>Phase de vote :</strong> Votez pour Ãliminer un joueur suspect</li>
+                            <li><strong>Action du tueur :</strong> Le tueur peut utiliser sa munition Ã  tout moment</li>
+                            <li><strong>Victoire :</strong> PremiÃ¨re Ãquipe Ã  Ãliminer le reprÃsentant adverse gagne</li>
+                        </ul>
+                    </div>
+
+                    <div class="rule-block">
+                        <h4>ðŸ' StratÃgie</h4>
+                        <ul>
+                            <li>Communiquez discrÃ¨tement avec votre Ãquipe</li>
+                            <li>DÃmasquez les infiltrÃs adverses</li>
+                            <li>ProtÃgez votre reprÃsentant Ã  tout prix</li>
+                            <li>Bluffez pour semer le doute chez l'adversaire</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div class="info-box">
                 <div class="info-item">
-                    <span class="info-icon">👥</span>
+                    <span class="info-icon">ðŸ‘¥</span>
                     <span>4+ joueurs</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">⏱️</span>
+                    <span class="info-icon">â±ï¸</span>
                     <span>60 minutes</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">🎯</span>
-                    <span>Stratégie & Bluff</span>
+                    <span class="info-icon">ðŸŽ¯</span>
+                    <span>StratÃ©gie & Bluff</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Écran Créer une partie -->
+    <!-- Ã‰cran CrÃ©er une partie -->
     <div id="screen-create" class="screen">
         <div class="container">
-            <button class="btn-back" onclick="showWelcome()">← Retour</button>
+            <button class="btn-back" onclick="showWelcome()">â† Retour</button>
             
-            <h2 class="screen-title">Créer une partie</h2>
+            <h2 class="screen-title">CrÃ©er une partie</h2>
             
             <div class="form-card">
                 <div class="form-group">
@@ -75,17 +153,17 @@
                 </div>
                 
                 <button class="btn btn-primary btn-lg" onclick="createGame()">
-                    Créer la partie
-                    <span class="btn-arrow">→</span>
+                    CrÃ©er la partie
+                    <span class="btn-arrow">â†’</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Écran Rejoindre une partie -->
+    <!-- Ã‰cran Rejoindre une partie -->
     <div id="screen-join" class="screen">
         <div class="container">
-            <button class="btn-back" onclick="showWelcome()">← Retour</button>
+            <button class="btn-back" onclick="showWelcome()">â† Retour</button>
             
             <h2 class="screen-title">Rejoindre une partie</h2>
             
@@ -108,13 +186,13 @@
                 
                 <button class="btn btn-primary btn-lg" onclick="joinGame()">
                     Rejoindre
-                    <span class="btn-arrow">→</span>
+                    <span class="btn-arrow">â†’</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Écran Lobby -->
+    <!-- Ã‰cran Lobby -->
     <div id="screen-lobby" class="screen">
         <div class="container">
             <div class="lobby-header">
@@ -126,28 +204,28 @@
             </div>
             
             <div class="players-grid" id="lobby-players">
-                <!-- Les joueurs seront ajoutés dynamiquement -->
+                <!-- Les joueurs seront ajoutÃ©s dynamiquement -->
             </div>
             
             <div class="lobby-actions">
                 <div class="player-count" id="player-count">
-                    <span class="count-icon">👥</span>
+                    <span class="count-icon">ðŸ‘¥</span>
                     <span id="count-text">0 joueurs (minimum 4)</span>
                 </div>
                 <button class="btn btn-primary btn-lg" id="start-game-btn" onclick="startGame()" disabled>
                     Lancer la partie
-                    <span class="btn-arrow">→</span>
+                    <span class="btn-arrow">â†’</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Écran de Jeu -->
+    <!-- Ã‰cran de Jeu -->
     <div id="screen-game" class="screen">
         <div class="container">
             <div class="game-header">
                 <div class="timer-display">
-                    <span class="timer-icon">⏱️</span>
+                    <span class="timer-icon">â±ï¸</span>
                     <span id="game-timer">60:00</span>
                 </div>
                 <div class="game-code-small">
@@ -155,10 +233,10 @@
                 </div>
             </div>
             
-            <!-- Carte du rôle secret -->
+            <!-- Carte du rÃ´le secret -->
             <div class="secret-role-card" id="role-card">
                 <div class="role-header">
-                    <span class="role-label">Votre rôle secret</span>
+                    <span class="role-label">Votre rÃ´le secret</span>
                 </div>
                 <div class="role-content">
                     <div class="role-team" id="role-team">
@@ -166,7 +244,7 @@
                     </div>
                     <div class="role-name" id="role-name">En attente...</div>
                     <div class="role-munitions" id="role-munitions" style="display: none;">
-                        <span class="munition-icon">🔫</span>
+                        <span class="munition-icon">ðŸ”«</span>
                         <span id="munitions-count">0</span> munition(s)
                     </div>
                 </div>
@@ -176,7 +254,7 @@
             <div class="game-players-section">
                 <h3 class="section-title">Joueurs en vie</h3>
                 <div class="game-players-grid" id="game-players">
-                    <!-- Les joueurs seront ajoutés dynamiquement -->
+                    <!-- Les joueurs seront ajoutÃ©s dynamiquement -->
                 </div>
             </div>
         </div>
@@ -191,3 +269,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
