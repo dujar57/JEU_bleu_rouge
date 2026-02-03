@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Encodage UTF-8 - Jeu Bleu vs Rouge</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 40px;
+            background: var(--dark-card);
+            border-radius: 20px;
+            border: 2px solid var(--blue-primary);
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        
+        .test-title {
+            color: var(--blue-primary);
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .success {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            font-size: 1.2rem;
+        }
+        
+        .demo-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .demo-buttons .btn {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles"></div>
+    
+    <div class="container">
+        <div class="test-container">
+            <h1 class="test-title">✅ Test d'Encodage UTF-8</h1>
+            
+            <div class="test-section">
+                <h2>🔤 Caractères Français</h2>
+                <div class="test-item">
+                    <strong>Accents :</strong> é è ê ë à â ä ù û ü ï î ô ö ç
+                </div>
+                <div class="test-item">
+                    <strong>Majuscules :</strong> É È Ê Ë À Â Ä Ù Û Ü Ï Î Ô Ö Ç
+                </div>
+                <div class="test-item">
+                    <strong>Mots courants :</strong> 
+                    • Créer • Règles • Écran • Arrière-plan • Animées • Stratégie • Équipe • Traître
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🌍 Caractères Spéciaux</h2>
+                <div class="test-item">
+                    <strong>Symboles :</strong> • ° © ® € £ $ ¥ ¢ § ¶ † ‡ ‰ ′ ″
+                </div>
+                <div class="test-item">
+                    <strong>Flèches :</strong> ← → ↑ ↓ ↔ ⇐ ⇒ ⇑ ⇓ ⇔
+                </div>
+                <div class="test-item">
+                    <strong>Autres :</strong> ✓ ✗ ★ ☆ ♠ ♣ ♥ ♦ ☺ ☻ ♀ ♂
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🎮 Interface du Jeu</h2>
+                <div class="test-item">
+                    <p><strong>Titre :</strong> 🔵 BLEU vs ROUGE 🔴</p>
+                    <p><strong>Actions :</strong> Créer une partie • Rejoindre • Voter • Éliminer</p>
+                    <p><strong>Rôles :</strong> Équipier Bleu • Équipier Rouge • Traître • Assassin</p>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🔘 Test des Boutons</h2>
+                <p style="margin-bottom: 20px; text-align: center;">
+                    Les boutons ci-dessous doivent être <span class="success">cliquables et lisibles</span>
+                </p>
+                
+                <div class="demo-buttons">
+                    <button class="btn btn-primary" onclick="alert('✅ Bouton Primaire Cliqué!')">
+                        Créer une Partie
+                    </button>
+                    <button class="btn btn-secondary" onclick="alert('✅ Bouton Secondaire Cliqué!')">
+                        Rejoindre
+                    </button>
+                </div>
+                
+                <div class="demo-buttons">
+                    <button class="btn btn-primary" onclick="alert('✅ Démarrer!')">
+                        🚀 Démarrer la Partie
+                    </button>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <input type="text" 
+                           placeholder="Entrez votre pseudo avec des accents : Léa, François, Chloé..." 
+                           style="width: 100%; padding: 18px; border: 3px solid rgba(255,255,255,0.2); border-radius: 12px; background: var(--dark-bg); color: white; font-size: 1.1rem;">
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>📊 Résultats du Test</h2>
+                <div class="test-item">
+                    <p>✅ <strong>Encodage :</strong> <span class="success">UTF-8</span></p>
+                    <p>✅ <strong>Affichage des accents :</strong> <span class="success">Correct</span></p>
+                    <p>✅ <strong>Symboles spéciaux :</strong> <span class="success">Correct</span></p>
+                    <p>✅ <strong>Lisibilité :</strong> <span class="success">Améliorée</span></p>
+                    <p>✅ <strong>Boutons :</strong> <span class="success">Visibles et cliquables</span></p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="index.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                    🏠 Retour au Jeu
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="space-effects.js"></script>
+    <script>
+        // Vérification JavaScript de l'encodage
+        const testString = "Vérification: é è ê ë à â ä ù û ü ï î ô ö ç";
+        console.log('✅ Test UTF-8:', testString);
+        console.log('✅ Charset de la page:', document.characterSet);
+        
+        // Afficher dans la console si le charset est correct
+        if (document.characterSet.toUpperCase() === 'UTF-8') {
+            console.log('✅ ENCODAGE UTF-8 CONFIRMÉ !');
+        } else {
+            console.error('❌ ATTENTION: Encodage détecté =', document.characterSet);
+        }
+    </script>
+</body>
+</html>

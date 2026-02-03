@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "dev:utf8": "chcp 65001 && nodemon server.js",
+    "start:utf8": "chcp 65001 && node server.js"
   },
   "keywords": [
     "socket.io",

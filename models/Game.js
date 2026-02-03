@@ -26,6 +26,12 @@ const gameSchema = new mongoose.Schema({
     team: String,
     joinedAt: Date
   }],
+  chatMessages: [{
+    playerNumber: Number,
+    playerPseudo: String,
+    message: String,
+    timestamp: Date
+  }],
   winner: {
     type: String,
     default: null

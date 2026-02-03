@@ -1,3 +1,5 @@
+// -*- coding: utf-8 -*-
+// @charset "UTF-8"
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -15,6 +17,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Forcer l'encodage UTF-8 pour toutes les réponses
+// Ajoute automatiquement charset=utf-8 aux types textuels sans écraser le type
+app.use((req, res, next) => {
+  const origSetHeader = res.setHeader.bind(res);
+  res.setHeader = function(name, value) {
+    if (typeof name === 'string' && name.toLowerCase() === 'content-type') {
+      if (typeof value === 'string' && !/charset=/i.test(value)) {
+        const needsCharset = /^(text\/|application\/json|application\/javascript|application\/xml)/i.test(value);
+        if (needsCharset) {
+          value = value + '; charset=utf-8';
+        }
+      }
+    }
+    return origSetHeader(name, value);
+  };
+  next();
+});
+
 // Variable globale pour vérifier la connexion MongoDB
 let mongoConnected = false;
 
@@ -23,6 +43,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_
 .then(() => {
   console.log('✅ Connecté à MongoDB');
   mongoConnected = true;
+  
+  // Restaurer les parties actives depuis MongoDB
+  restoreActiveGames();
   
   // Nettoyage automatique des anciennes parties toutes les 6 heures
   setInterval(() => {
@@ -65,6 +88,328 @@ const io = new Server(server, {
 // STRUCTURE DES DONNÉES
 // ==========================
 const games = {};
+
+// Fonction pour restaurer les parties actives depuis MongoDB
+async function restoreActiveGames() {
+  if (!mongoConnected) return;
+  
+  try {
+    // Récupérer toutes les parties en cours
+    const activeGames = await Game.find({ 
+      status: { $in: ['waiting', 'playing'] }
+    });
+    
+    console.log(`🔄 Restauration de ${activeGames.length} partie(s) active(s)...`);
+    
+    for (const gameDoc of activeGames) {
+      // Reconstruire la structure de jeu en mémoire
+      games[gameDoc.gameId] = {
+        status: gameDoc.status === 'waiting' ? 'LOBBY' : 'PLAYING',
+        timer: 0,
+        nextEventTime: null,
+        phases: null,
+        currentPhase: 0,
+        phaseStartTime: null,
+        votingPhase: null,
+        currentVoteNumber: 0,
+        blueVotes: {},
+        redVotes: {},
+        chatMessages: gameDoc.chatMessages || [],
+        userId: gameDoc.userId,
+        players: gameDoc.players.map(p => ({
+          socketId: null, // Sera mis à jour quand les joueurs se reconnectent
+          pseudo: p.name,
+          realLifeInfo: p.name,
+          team: p.team,
+          role: null,
+          isAlive: true,
+          hasVoted: false,
+          munitions: 0,
+          anonymousNumber: null
+        }))
+      };
+      
+      console.log(`✅ Partie ${gameDoc.gameId} restaurée (${gameDoc.players.length} joueurs)`);
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de la restauration des parties:', error);
+  }
+}
+
+// Système de vérification automatique des fins de partie et phases de vote
+setInterval(() => {
+  for (const gameCode in games) {
+    const game = games[gameCode];
+    
+    if (game.status !== 'PLAYING' || !game.phases) continue;
+    
+    const now = Date.now();
+    
+    // Vérifier si le temps est écoulé
+    if (now >= game.phases.endTime) {
+      console.log(`⏰ Temps écoulé pour la partie ${gameCode}`);
+      endGameByTimeout(gameCode);
+      continue;
+    }
+    
+    // Vérifier les conditions de victoire
+    const victory = checkVictoryConditions(game);
+    if (victory) {
+      console.log(`🏆 ${victory.message} dans la partie ${gameCode}`);
+      endGameWithWinner(gameCode, victory);
+      continue;
+    }
+    
+    // Vérifier si une phase de vote doit commencer
+    const nextVote = game.phases.voteSchedule[game.currentVoteNumber];
+    if (nextVote) {
+      // Phase de discussion
+      if (!game.votingPhase && now >= nextVote.discussionStart && now < nextVote.votingStart) {
+        game.votingPhase = 'DISCUSSION';
+        console.log(`💬 Partie ${gameCode} - Phase de discussion ${game.currentVoteNumber + 1}/${game.phases.numberOfVotes}`);
+        notifyVotingPhase(gameCode, 'DISCUSSION', nextVote);
+      }
+      
+      // Phase de vote
+      if (game.votingPhase === 'DISCUSSION' && now >= nextVote.votingStart && now < nextVote.endTime) {
+        game.votingPhase = 'VOTING';
+        game.blueVotes = {};
+        game.redVotes = {};
+        // Réinitialiser le statut de vote de tous les joueurs
+        game.players.forEach(p => p.hasVoted = false);
+        console.log(`🗳️ Partie ${gameCode} - Phase de vote ${game.currentVoteNumber + 1}/${game.phases.numberOfVotes}`);
+        notifyVotingPhase(gameCode, 'VOTING', nextVote);
+      }
+      
+      // Fin du vote - Comptage et élimination
+      if (game.votingPhase === 'VOTING' && now >= nextVote.endTime) {
+        console.log(`📊 Partie ${gameCode} - Comptage des votes ${game.currentVoteNumber + 1}`);
+        processVoteResults(gameCode);
+        game.votingPhase = null;
+        game.currentVoteNumber++;
+      }
+    }
+  }
+}, 5000); // Vérification toutes les 5 secondes
+
+// Fonction pour terminer une partie par timeout
+async function endGameByTimeout(gameCode) {
+  const game = games[gameCode];
+  if (!game) return;
+  
+  const alivePlayers = game.players.filter(p => p.isAlive);
+  
+  // Déterminer le gagnant en fonction des survivants
+  let winner = 'ÉGALITÉ';
+  let message = '⏰ TEMPS ÉCOULÉ ! ';
+  
+  if (alivePlayers.length === 0) {
+    message += 'Aucun survivant.';
+  } else if (alivePlayers.length === 1) {
+    winner = alivePlayers[0].team.toUpperCase();
+    message += `${alivePlayers[0].pseudo} est le dernier survivant !`;
+  } else {
+    // Compter les survivants par équipe
+    const blueAlive = alivePlayers.filter(p => p.team === 'bleu' && !p.isTraitor).length;
+    const redAlive = alivePlayers.filter(p => p.team === 'rouge' && !p.isTraitor).length;
+    const traitorsAlive = alivePlayers.filter(p => p.isTraitor).length;
+    
+    if (traitorsAlive === 2) {
+      winner = 'TRAÎTRES';
+      message += '🎭 Les traîtres ont survécu !';
+    } else if (blueAlive > redAlive) {
+      winner = 'BLEU';
+      message += `🔵 L'équipe Bleue domine avec ${blueAlive} survivants !`;
+    } else if (redAlive > blueAlive) {
+      winner = 'ROUGE';
+      message += `🔴 L'équipe Rouge domine avec ${redAlive} survivants !`;
+    } else {
+      message += `Égalité : ${blueAlive} survivants par équipe.`;
+    }
+  }
+  
+  game.status = 'FINISHED';
+  game.winner = winner;
+  
+  // Notifier tous les joueurs
+  game.players.forEach(player => {
+    io.to(player.socketId).emit('game_ended', {
+      winner: winner,
+      message: message,
+      survivors: alivePlayers.map(p => ({
+        pseudo: p.pseudo,
+        team: p.team,
+        role: p.role,
+        isTraitor: p.isTraitor || false
+      }))
+    });
+  });
+  
+  // Sauvegarder dans la base de données
+  if (game.userId && mongoConnected) {
+    try {
+      await Game.findOneAndUpdate(
+        { gameId: gameCode },
+        { 
+          status: 'finished',
+          winner: winner,
+          finishedAt: new Date(),
+          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expire dans 24h
+        }
+      );
+    } catch (error) {
+      console.error('Erreur lors de la finalisation de la partie:', error);
+    }
+  }
+  
+  updateRoom(gameCode);
+}
+
+// Fonction pour terminer une partie avec un gagnant
+async function endGameWithWinner(gameCode, victory) {
+  const game = games[gameCode];
+  if (!game) return;
+  
+  game.status = 'FINISHED';
+  game.winner = victory.winner;
+  
+  const alivePlayers = game.players.filter(p => p.isAlive);
+  
+  // Notifier tous les joueurs
+  game.players.forEach(player => {
+    io.to(player.socketId).emit('game_ended', {
+      winner: victory.winner,
+      message: victory.message,
+      survivors: alivePlayers.map(p => ({
+        pseudo: p.pseudo,
+        team: p.team,
+        role: p.role,
+        isTraitor: p.isTraitor || false
+      })),
+      traitors: victory.traitors,
+      lovers: victory.lovers
+    });
+  });
+  
+  // Sauvegarder dans la base de données
+  if (game.userId && mongoConnected) {
+    try {
+      await Game.findOneAndUpdate(
+        { gameId: gameCode },
+        { 
+          status: 'finished',
+          winner: victory.winner,
+          finishedAt: new Date(),
+          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      );
+    } catch (error) {
+      console.error('Erreur lors de la finalisation de la partie:', error);
+    }
+  }
+  
+  updateRoom(gameCode);
+}
+
+// Notifie tous les joueurs du changement de phase de vote
+function notifyVotingPhase(gameCode, phase, voteInfo) {
+  const game = games[gameCode];
+  if (!game) return;
+  
+  game.players.forEach(player => {
+    io.to(player.socketId).emit('voting_phase_change', {
+      phase: phase,
+      voteNumber: game.currentVoteNumber + 1,
+      totalVotes: game.phases.numberOfVotes,
+      discussionEnd: voteInfo.votingStart,
+      votingEnd: voteInfo.endTime,
+      message: phase === 'DISCUSSION' 
+        ? '💬 Phase de discussion - Préparez vos arguments'
+        : '🗳️ Phase de vote - Votez maintenant !'
+    });
+  });
+  
+  updateRoom(gameCode);
+}
+
+// Traite les résultats du vote et élimine les joueurs
+function processVoteResults(gameCode) {
+  const game = games[gameCode];
+  if (!game) return;
+  
+  const alivePlayers = game.players.filter(p => p.isAlive);
+  const blueAlive = alivePlayers.filter(p => p.team === 'bleu' && p.isAlive);
+  const redAlive = alivePlayers.filter(p => p.team === 'rouge' && p.isAlive);
+  
+  // Compter les votes des BLEUS
+  const blueVoteCount = {};
+  for (const targetId in game.blueVotes) {
+    blueVoteCount[targetId] = game.blueVotes[targetId].length;
+  }
+  
+  // Compter les votes des ROUGES
+  const redVoteCount = {};
+  for (const targetId in game.redVotes) {
+    redVoteCount[targetId] = game.redVotes[targetId].length;
+  }
+  
+  const deadPlayers = [];
+  
+  // Trouver le joueur le plus voté par les BLEUS
+  if (Object.keys(blueVoteCount).length > 0) {
+    const maxBlueVotes = Math.max(...Object.values(blueVoteCount));
+    const blueTargets = Object.keys(blueVoteCount).filter(id => blueVoteCount[id] === maxBlueVotes);
+    
+    // En cas d'égalité, choisir aléatoirement
+    const blueTargetId = blueTargets[Math.floor(Math.random() * blueTargets.length)];
+    const blueTarget = game.players.find(p => p.socketId === blueTargetId);
+    
+    if (blueTarget && blueTarget.isAlive) {
+      const percentage = Math.round((maxBlueVotes / blueAlive.length) * 100);
+      const killed = killPlayer(game, blueTarget, `éliminé par vote de l'équipe Bleue (${percentage}%)`);
+      deadPlayers.push(...killed);
+    }
+  }
+  
+  // Trouver le joueur le plus voté par les ROUGES
+  if (Object.keys(redVoteCount).length > 0) {
+    const maxRedVotes = Math.max(...Object.values(redVoteCount));
+    const redTargets = Object.keys(redVoteCount).filter(id => redVoteCount[id] === maxRedVotes);
+    
+    // En cas d'égalité, choisir aléatoirement
+    const redTargetId = redTargets[Math.floor(Math.random() * redTargets.length)];
+    const redTarget = game.players.find(p => p.socketId === redTargetId);
+    
+    if (redTarget && redTarget.isAlive) {
+      const percentage = Math.round((maxRedVotes / redAlive.length) * 100);
+      const killed = killPlayer(game, redTarget, `éliminé par vote de l'équipe Rouge (${percentage}%)`);
+      deadPlayers.push(...killed);
+    }
+  }
+  
+  // Notifier tous les joueurs des éliminations
+  if (deadPlayers.length > 0) {
+    game.players.forEach(player => {
+      io.to(player.socketId).emit('vote_results', {
+        eliminated: deadPlayers,
+        message: `💀 ${deadPlayers.length} joueur(s) éliminé(s) par vote`
+      });
+    });
+    
+    console.log(`💀 Partie ${gameCode} - ${deadPlayers.length} joueur(s) éliminé(s) :`, 
+      deadPlayers.map(p => `${p.pseudo} (${p.reason})`).join(', '));
+  } else {
+    // Aucun vote ou aucune élimination
+    game.players.forEach(player => {
+      io.to(player.socketId).emit('vote_results', {
+        eliminated: [],
+        message: '🤷 Aucune élimination - Pas assez de votes'
+      });
+    });
+  }
+  
+  updateRoom(gameCode);
+}
 
 // ==========================
 // FONCTIONS UTILITAIRES
@@ -117,6 +462,89 @@ function killPlayer(game, targetPlayer, reason = 'éliminé') {
   return deadPlayers;
 }
 
+// Vérifie les conditions de victoire
+function checkVictoryConditions(game) {
+  const alivePlayers = game.players.filter(p => p.isAlive);
+  
+  // Vérifier si les traîtres sont encore en vie
+  const aliveTraitors = alivePlayers.filter(p => p.isTraitor);
+  const blueAlive = alivePlayers.filter(p => p.team === 'bleu' && !p.isTraitor).length;
+  const redAlive = alivePlayers.filter(p => p.team === 'rouge' && !p.isTraitor).length;
+  const blueRepAlive = alivePlayers.some(p => p.team === 'bleu' && p.role === 'representant');
+  const redRepAlive = alivePlayers.some(p => p.team === 'rouge' && p.role === 'representant');
+  
+  // CONDITION 1 : Les TRAÎTRES gagnent si les deux représentants sont morts ET les deux traîtres sont vivants
+  if (aliveTraitors.length === 2 && !blueRepAlive && !redRepAlive) {
+    return { 
+      winner: 'TRAÎTRES', 
+      message: '🎭 LES TRAÎTRES ONT GAGNÉ ! Ils ont éliminé les deux représentants !',
+      traitors: aliveTraitors.map(t => ({ pseudo: t.pseudo, anonymousNumber: t.anonymousNumber }))
+    };
+  }
+  
+  // CONDITION 2 : Une équipe gagne si le représentant adverse est mort
+  if (!blueRepAlive && blueAlive === 0) {
+    return { winner: 'ROUGE', message: '🔴 L\'ÉQUIPE ROUGE A GAGNÉ !' };
+  }
+  
+  if (!redRepAlive && redAlive === 0) {
+    return { winner: 'BLEU', message: '🔵 L\'ÉQUIPE BLEUE A GAGNÉ !' };
+  }
+  
+  // CONDITION 3 : Les amoureux gagnent si ce sont les 2 derniers survivants
+  const loverAlive = alivePlayers.filter(p => p.isLover);
+  if (loverAlive.length === 2 && alivePlayers.length === 2) {
+    return { 
+      winner: 'AMOUREUX', 
+      message: '💕 LES AMOUREUX ONT GAGNÉ !',
+      lovers: loverAlive.map(l => ({ pseudo: l.pseudo, team: l.team }))
+    };
+  }
+  
+  return null;
+}
+
+// Calcule les phases de jeu en fonction de la durée et du nombre de joueurs
+function calculateGamePhases(duration, playerCount) {
+  // Calcul du nombre de votes basé sur la durée
+  // Règle : 2 votes par jour (24h)
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const votesPerDay = 2;
+  const numberOfVotes = Math.max(3, Math.floor((duration / oneDayMs) * votesPerDay));
+  
+  // Durée entre chaque vote
+  const voteInterval = Math.floor(duration / (numberOfVotes + 1));
+  
+  // Temps de discussion avant chaque vote (15% du temps entre votes)
+  const discussionTime = Math.floor(voteInterval * 0.15);
+  
+  // Temps de vote (10% du temps entre votes)
+  const votingTime = Math.floor(voteInterval * 0.10);
+  
+  // Calculer les timestamps de chaque vote
+  const voteSchedule = [];
+  for (let i = 1; i <= numberOfVotes; i++) {
+    voteSchedule.push({
+      voteNumber: i,
+      startTime: Date.now() + (voteInterval * i),
+      discussionStart: Date.now() + (voteInterval * i) - discussionTime - votingTime,
+      votingStart: Date.now() + (voteInterval * i) - votingTime,
+      endTime: Date.now() + (voteInterval * i)
+    });
+  }
+  
+  return {
+    totalDuration: duration,
+    numberOfVotes: numberOfVotes,
+    voteInterval: voteInterval,
+    discussionTime: Math.max(120000, discussionTime), // Minimum 2 minutes
+    votingTime: Math.max(60000, votingTime), // Minimum 1 minute
+    voteSchedule: voteSchedule,
+    startTime: Date.now(),
+    endTime: Date.now() + duration
+  };
+}
+
 // Envoie la mise à jour de la salle à tous les joueurs
 function updateRoom(gameCode) {
   const game = games[gameCode];
@@ -126,11 +554,14 @@ function updateRoom(gameCode) {
   const publicGameData = {
     status: game.status,
     timer: game.timer,
+    nextEventTime: game.nextEventTime,
+    votingPhase: game.votingPhase,
     players: game.players.map(p => ({
       socketId: p.socketId,
       pseudo: p.pseudo,
       realLifeInfo: p.realLifeInfo,
       team: game.status === 'LOBBY' ? null : p.team, // Cache l'équipe en lobby
+      anonymousNumber: p.anonymousNumber, // Numéro de joueur anonyme
       isAlive: p.isAlive,
       hasVoted: p.hasVoted
     }))
@@ -167,6 +598,14 @@ io.on('connection', (socket) => {
       status: 'LOBBY',
       timer: 0,
       nextEventTime: null,
+      phases: null, // Phases de jeu calculées
+      currentPhase: 0,
+      phaseStartTime: null,
+      votingPhase: null, // 'DISCUSSION', 'VOTING', ou null
+      currentVoteNumber: 0,
+      blueVotes: {}, // { targetPlayerId: [voterId1, voterId2, ...] }
+      redVotes: {}, // { targetPlayerId: [voterId1, voterId2, ...] }
+      chatMessages: [], // Historique des messages
       userId: userId || null, // ID de l'utilisateur créateur
       players: [
         {
@@ -195,7 +634,8 @@ io.on('connection', (socket) => {
             name: pseudo,
             team: null,
             joinedAt: new Date()
-          }]
+          }],
+          chatMessages: [] // Initialiser l'historique des messages
         });
         await gameDoc.save();
         console.log(`💾 Partie ${gameCode} sauvegardée pour l'utilisateur ${userId}`);
@@ -252,6 +692,19 @@ io.on('connection', (socket) => {
     console.log(`👥 ${pseudo} a rejoint la partie ${gameCode}`);
 
     socket.emit('game_joined', { gameCode });
+    
+    // Envoyer l'historique des messages au nouveau joueur
+    if (game.chatMessages && game.chatMessages.length > 0) {
+      game.chatMessages.forEach(msg => {
+        socket.emit('chat_message', {
+          playerNumber: msg.playerNumber,
+          message: msg.message,
+          timestamp: msg.timestamp
+        });
+      });
+      console.log(`📜 ${game.chatMessages.length} messages envoyés à ${pseudo}`);
+    }
+    
     updateRoom(gameCode);
   });
 
@@ -259,7 +712,7 @@ io.on('connection', (socket) => {
   // EVENT: LANCER LA PARTIE
   // ==========================
   socket.on('start_game', async (data) => {
-    const { gameCode } = data;
+    const { gameCode, duration } = data;
     const game = games[gameCode];
 
     if (!game) {
@@ -271,6 +724,14 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Il faut au moins 4 joueurs pour commencer.' });
       return;
     }
+
+    // Calculer les phases de jeu
+    const gamePhases = calculateGamePhases(duration || 3600000, game.players.length);
+    game.phases = gamePhases;
+    game.currentPhase = 0;
+    game.phaseStartTime = Date.now();
+
+    console.log(`⏰ Partie ${gameCode} - Durée: ${duration}ms, Phases: ${gamePhases.numberOfPhases}`);
 
     // ÉTAPE 1 : Mélanger les joueurs
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
@@ -348,7 +809,9 @@ io.on('connection', (socket) => {
       }
     }
     game.status = 'PLAYING';
-    game.nextEventTime = Date.now() + 3600000; // 1 heure (en millisecondes)
+    game.nextEventTime = game.phases.endTime;
+
+    console.log(`🚀 La partie ${gameCode} a commencé ! Fin prévue : ${new Date(game.phases.endTime).toLocaleString('fr-FR')}`);
 
     // Mettre à jour la partie dans la base de données
     if (game.userId && mongoConnected) {
@@ -388,9 +851,10 @@ io.on('connection', (socket) => {
         const partner = game.players.find(p => p.socketId === player.traitorPartnerSocketId);
         if (partner) {
           roleData.traitorInfo = {
-            pseudo: partner.pseudo,
-            team: partner.team,
-            role: partner.role
+            pseudo: partner.pseudo, // Le pseudo (nom réel du joueur)
+            anonymousNumber: partner.anonymousNumber, // Le numéro de joueur anonyme
+            team: partner.team, // L'équipe infiltrée
+            role: partner.role // Le rôle dans l'équipe infiltrée
           };
         }
       }
@@ -417,7 +881,7 @@ io.on('connection', (socket) => {
   // ==========================
   // EVENT: MESSAGE CHAT
   // ==========================
-  socket.on('chat_message', (data) => {
+  socket.on('chat_message', async (data) => {
     const { gameCode, message } = data;
     const game = games[gameCode];
 
@@ -430,16 +894,119 @@ io.on('connection', (socket) => {
     // Message trop long ou vide
     if (!message || message.trim().length === 0 || message.length > 200) return;
 
+    const chatMessage = {
+      playerNumber: player.anonymousNumber,
+      playerPseudo: player.pseudo,
+      message: message.trim(),
+      timestamp: Date.now()
+    };
+
+    // Stocker le message dans le jeu
+    game.chatMessages.push(chatMessage);
+
+    // Sauvegarder dans MongoDB si possible
+    if (game.userId && mongoConnected) {
+      try {
+        await Game.findOneAndUpdate(
+          { gameId: gameCode },
+          { 
+            $push: { 
+              chatMessages: {
+                playerNumber: chatMessage.playerNumber,
+                playerPseudo: chatMessage.playerPseudo,
+                message: chatMessage.message,
+                timestamp: new Date(chatMessage.timestamp)
+              }
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde du message:', error);
+      }
+    }
+
     // Envoyer le message à tous les joueurs de la partie avec le numéro anonyme
     game.players.forEach(p => {
       io.to(p.socketId).emit('chat_message', {
-        playerNumber: player.anonymousNumber,
-        message: message.trim(),
-        timestamp: Date.now()
+        playerNumber: chatMessage.playerNumber,
+        message: chatMessage.message,
+        timestamp: chatMessage.timestamp
       });
     });
 
     console.log(`💬 Partie ${gameCode} - Joueur ${player.anonymousNumber}: ${message.substring(0, 50)}`);
+  });
+
+  // ==========================
+  // EVENT: VOTER
+  // ==========================
+  socket.on('cast_vote', (data) => {
+    const { gameCode, targetSocketId } = data;
+    const game = games[gameCode];
+
+    if (!game || game.votingPhase !== 'VOTING') {
+      socket.emit('error', { message: 'Le vote n\'est pas disponible actuellement.' });
+      return;
+    }
+
+    // Trouver le joueur qui vote
+    const voter = game.players.find(p => p.socketId === socket.id);
+    if (!voter || !voter.isAlive) {
+      socket.emit('error', { message: 'Vous ne pouvez pas voter.' });
+      return;
+    }
+
+    // Vérifier que la cible existe
+    const target = game.players.find(p => p.socketId === targetSocketId);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Ce joueur n\'est pas disponible.' });
+      return;
+    }
+
+    // Enregistrer le vote selon l'équipe du votant
+    if (voter.team === 'bleu') {
+      // Retirer le vote précédent de ce joueur
+      for (const targetId in game.blueVotes) {
+        game.blueVotes[targetId] = game.blueVotes[targetId].filter(id => id !== voter.socketId);
+        if (game.blueVotes[targetId].length === 0) {
+          delete game.blueVotes[targetId];
+        }
+      }
+      
+      // Ajouter le nouveau vote
+      if (!game.blueVotes[targetSocketId]) {
+        game.blueVotes[targetSocketId] = [];
+      }
+      game.blueVotes[targetSocketId].push(voter.socketId);
+      
+    } else if (voter.team === 'rouge') {
+      // Retirer le vote précédent de ce joueur
+      for (const targetId in game.redVotes) {
+        game.redVotes[targetId] = game.redVotes[targetId].filter(id => id !== voter.socketId);
+        if (game.redVotes[targetId].length === 0) {
+          delete game.redVotes[targetId];
+        }
+      }
+      
+      // Ajouter le nouveau vote
+      if (!game.redVotes[targetSocketId]) {
+        game.redVotes[targetSocketId] = [];
+      }
+      game.redVotes[targetSocketId].push(voter.socketId);
+    }
+
+    // Marquer le joueur comme ayant voté
+    voter.hasVoted = true;
+
+    // Confirmer le vote au joueur
+    socket.emit('vote_confirmed', {
+      targetNumber: target.anonymousNumber,
+      targetPseudo: target.pseudo
+    });
+
+    console.log(`🗳️ Partie ${gameCode} - Joueur ${voter.anonymousNumber} (${voter.team}) vote pour éliminer Joueur ${target.anonymousNumber}`);
+    
+    updateRoom(gameCode);
   });
 
   // ==========================

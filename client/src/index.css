@@ -1,3 +1,4 @@
+@charset "UTF-8";
 * {
   margin: 0;
   padding: 0;
@@ -11,6 +12,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  font-size: 18px;
+  line-height: 1.6;
 }
 
 #root {
@@ -41,36 +44,38 @@ h2 {
 
 input {
   width: 100%;
-  padding: 15px;
+  padding: 18px;
   margin-bottom: 15px;
-  border: 2px solid #ddd;
+  border: 3px solid #ddd;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 18px;
   transition: border-color 0.3s;
+  font-weight: 500;
 }
 
 input:focus {
   outline: none;
   border-color: #667eea;
+  box-shadow: 0 0 12px rgba(102, 126, 234, 0.5);
 }
 
-button {
-  width: 100%;
-  padding: 15px;
+button {8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 18px;
+  border-radius: 12px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
 }
 
 button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
 }
 
 button:active {
@@ -80,60 +85,81 @@ button:active {
 button.secondary {
   background: white;
   color: #667eea;
-  border: 2px solid #667eea;
+  border: 3px solid #667eea;
+  font-weight: 700;
+}
+
+button.secondary:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
 }
 
 .game-code {
-  background: #f0f0f0;
-  padding: 20px;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+  padding: 25px;
+  border-radius: 14px;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  border: 2px solid rgba(102, 126, 234, 0.2);
 }
 
 .game-code h3 {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
+  color: #555;
+  font-size: 16px;
+  margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .game-code .code {
-  font-size: 36px;
+  font-size: 42px;
   font-weight: bold;
   color: #667eea;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
+  text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 .players-list {
-  margin: 20px 0;
+  margin: 25px 0;
 }
 
 .player-item {
-  background: #f9f9f9;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.player-item:hover {
+  transform: translateX(5px);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .player-item.bleu {
-  border-left: 5px solid #4169E1;
+  border-left: 6px solid #4169E1;
 }
 
 .player-item.rouge {
-  border-left: 5px solid #DC143C;
+  border-left: 6px solid #DC143C;
 }
 
 .player-name {
-  font-weight: bold;
-  color: #333;
+  font-weight: 700;
+  color: #222;
+  font-size: 18px;
 }
 
 .player-info {
-  font-size: 12px;
-  color: #666;
+  font-size: 14px;
+  color: #555;
+  margin-top: 4px;
 }
 
 .role-card {
@@ -175,4 +201,15 @@ button.secondary {
   padding: 40px;
   color: #667eea;
   font-size: 18px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
 }

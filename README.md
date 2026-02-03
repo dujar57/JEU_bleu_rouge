@@ -1,6 +1,10 @@
-# Jeu Bleu vs Rouge - Phases 1 & 2 ✅
+# Jeu Bleu vs Rouge - Production
 
-## Installation
+## 🌐 Site en ligne
+
+**URL de production :** https://jeu-bleu-rouge.onrender.com
+
+## Installation locale (développement uniquement)
 
 ### 1. Serveur (Backend)
 ```bash
@@ -9,8 +13,6 @@ npm install
 npm run dev
 ```
 
-Le serveur démarre sur http://localhost:3000
-
 ### 2. Client (Frontend)
 Ouvre un **nouveau terminal** :
 ```bash
@@ -18,8 +20,6 @@ cd client
 npm install
 npm run dev
 ```
-
-Le client démarre sur http://localhost:5173
 
 ## Ce qui fonctionne actuellement
 
@@ -38,6 +38,10 @@ Le client démarre sur http://localhost:5173
 - Attribution automatique des rôles (Bleu/Rouge)
 - Répartition : Représentant, Tueur, Lambda
 - Envoi secret du rôle à chaque joueur
+
+✅ **Encodage UTF-8**
+- Support complet des caractères spéciaux
+- Accents et émojis fonctionnels
 
 ## Prochaines étapes
 
@@ -64,7 +68,7 @@ JeuBleuRouge/
 
 ## Comment tester
 
-1. Ouvre http://localhost:5173 dans **plusieurs onglets** (ou navigateurs)
+1. Ouvre https://jeu-bleu-rouge.onrender.com dans **plusieurs onglets** (ou navigateurs)
 2. Premier joueur : "Créer une partie"
 3. Autres joueurs : "Rejoindre" avec le code affiché
 4. Quand 4+ joueurs : clic sur "Lancer la partie"

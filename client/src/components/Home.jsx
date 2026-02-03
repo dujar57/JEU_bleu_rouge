@@ -1,3 +1,5 @@
+// -*- coding: utf-8 -*-
+// @charset "UTF-8"
 import { useState } from 'react';
 
 function Home({ createGame, joinGame }) {

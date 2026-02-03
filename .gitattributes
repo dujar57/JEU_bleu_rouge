@@ -1,0 +1,28 @@
+# Forcer UTF-8 pour tous les fichiers texte
+* text=auto eol=lf
+
+# Fichiers sources - UTF-8
+*.js text eol=lf encoding=UTF-8
+*.jsx text eol=lf encoding=UTF-8
+*.ts text eol=lf encoding=UTF-8
+*.tsx text eol=lf encoding=UTF-8
+*.json text eol=lf encoding=UTF-8
+*.css text eol=lf encoding=UTF-8
+*.scss text eol=lf encoding=UTF-8
+*.html text eol=lf encoding=UTF-8
+*.xml text eol=lf encoding=UTF-8
+*.md text eol=lf encoding=UTF-8
+*.txt text eol=lf encoding=UTF-8
+*.yml text eol=lf encoding=UTF-8
+*.yaml text eol=lf encoding=UTF-8
+
+# Fichiers binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

@@ -1,10 +1,13 @@
+// -*- coding: utf-8 -*-
+// @charset "UTF-8"
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import Home from './components/Home';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
+import GameEnded from './components/GameEnded';
 
-const socket = io('http://localhost:3000');
+const socket = io('https://jeu-bleu-rouge.onrender.com');
 
 function App() {
   const [screen, setScreen] = useState('HOME'); // HOME, LOBBY, GAME
@@ -13,6 +16,7 @@ function App() {
   const [myRole, setMyRole] = useState(null);
   const [gameData, setGameData] = useState(null);
   const [error, setError] = useState('');
+  const [endGameData, setEndGameData] = useState(null);
 
   useEffect(() => {
     // Écoute la création de partie
@@ -46,12 +50,19 @@ function App() {
       setTimeout(() => setError(''), 3000);
     });
 
+    // Écoute la fin de partie
+    socket.on('game_ended', (data) => {
+      setEndGameData(data);
+      setScreen('GAME_ENDED');
+    });
+
     return () => {
       socket.off('game_created');
       socket.off('game_joined');
       socket.off('update_room');
       socket.off('your_role');
       socket.off('error');
+      socket.off('game_ended');
     };
   }, []);
 
@@ -65,8 +76,17 @@ function App() {
     socket.emit('join_game', { gameCode: code, pseudo, realLifeInfo });
   };
 
-  const startGame = () => {
-    socket.emit('start_game', { gameCode });
+  const startGame = (duration) => {
+    socket.emit('start_game', { gameCode, duration });
+  };
+
+  const returnHome = () => {
+    setScreen('HOME');
+    setGameCode('');
+    setPseudo('');
+    setMyRole(null);
+    setGameData(null);
+    setEndGameData(null);
   };
 
   return (
@@ -93,6 +113,13 @@ function App() {
           myRole={myRole}
           pseudo={pseudo}
           socket={socket}
+        />
+      )}
+
+      {screen === 'GAME_ENDED' && (
+        <GameEnded
+          endGameData={endGameData}
+          onReturnHome={returnHome}
         />
       )}
     </div>

@@ -1,0 +1,1004 @@
+"""
+Système de backtesting avec base de données SQLite
+Stocke toutes les données historiques et numérote les pumps par adresse
+Utilise les fonctions de previsions_dex.py pour accéder aux données complètes
+"""
+
+import sys
+import os
+import sqlite3
+import requests
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Tuple, Any
+import time
+import json
+from dataclasses import dataclass, asdict
+from collections import defaultdict
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.ticker import FuncFormatter
+import logging
+from logging.handlers import RotatingFileHandler
+from functools import wraps, lru_cache
+from contextlib import contextmanager
+
+# Ajouter le répertoire actuel au path pour importer previsions_dex
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Importer la configuration
+try:
+    from config import *
+except ImportError:
+    # Valeurs par défaut si config.py n'existe pas
+    API_TIMEOUT = 10
+    API_MAX_RETRIES = 3
+    API_RETRY_DELAY = 1
+    DB_PATH = "crypto_backtesting.db"
+    LOG_LEVEL = "INFO"
+    LOG_FILE = "backtesting.log"
+    MIN_PRICE_INCREASE = 30.0
+    MIN_VOLUME_INCREASE = 100.0
+    MIN_MAKERS_INCREASE = 50.0
+
+# ============== CONFIGURATION DU LOGGING ==============
+def setup_logging():
+    """Configure le système de logging"""
+    logger = logging.getLogger('backtesting')
+    logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+    
+    # Handler pour fichier avec rotation
+    try:
+        file_handler = RotatingFileHandler(
+            LOG_FILE, 
+            maxBytes=LOG_MAX_BYTES if 'LOG_MAX_BYTES' in globals() else 10*1024*1024,
+            backupCount=LOG_BACKUP_COUNT if 'LOG_BACKUP_COUNT' in globals() else 5
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(
+            LOG_FORMAT if 'LOG_FORMAT' in globals() else '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+    except Exception as e:
+        print(f"Avertissement: Impossible de créer le fichier de log: {e}")
+    
+    # Handler pour console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(levelname)s - %(message)s')
+    console_handler.setFormatter(console_formatter)
+    # Fix pour Windows : encoder en utf-8 avec remplacement des caractères problématiques
+    console_handler.stream.reconfigure(encoding='utf-8', errors='replace')
+    logger.addHandler(console_handler)
+    
+    return logger
+
+logger = setup_logging()
+
+# ============== RETRY MECHANISM ==============
+def retry_on_failure(max_retries: int = None, delay: float = None, backoff: float = 2.0):
+    """Décorateur pour réessayer automatiquement en cas d'échec avec backoff exponentiel
+    
+    Args:
+        max_retries: Nombre maximum de tentatives (défaut: API_MAX_RETRIES)
+        delay: Délai initial en secondes (défaut: API_RETRY_DELAY)
+        backoff: Facteur multiplicatif pour le délai (défaut: 2.0)
+    """
+    if max_retries is None:
+        max_retries = API_MAX_RETRIES if 'API_MAX_RETRIES' in globals() else 3
+    if delay is None:
+        delay = API_RETRY_DELAY if 'API_RETRY_DELAY' in globals() else 1
+    
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current_delay = delay
+            last_exception = None
+            
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Tentative {attempt + 1}/{max_retries} échouée pour {func.__name__}: {e}")
+                        time.sleep(current_delay)
+                        current_delay *= backoff
+                    else:
+                        logger.error(f"Toutes les tentatives ont échoué pour {func.__name__}: {e}")
+            
+            raise last_exception
+        return wrapper
+    return decorator
+
+# ============== CACHE SIMPLE ==============
+class SimpleCache:
+    """Cache simple avec TTL pour les requêtes API"""
+    def __init__(self, ttl: int = None):
+        self.cache = {}
+        self.ttl = ttl if ttl else (API_CACHE_TTL if 'API_CACHE_TTL' in globals() else 300)
+    
+    def get(self, key: str) -> Optional[Any]:
+        if key in self.cache:
+            value, timestamp = self.cache[key]
+            if time.time() - timestamp < self.ttl:
+                return value
+            else:
+                del self.cache[key]
+        return None
+    
+    def set(self, key: str, value: Any):
+        self.cache[key] = (value, time.time())
+    
+    def clear(self):
+        self.cache.clear()
+
+api_cache = SimpleCache()
+
+# ============== VALIDATION DES DONNÉES ==============
+def validate_price(price: float) -> bool:
+    """Valide qu'un prix est dans une plage acceptable"""
+    if price is None:
+        return False
+    try:
+        min_price = MIN_VALID_PRICE if 'MIN_VALID_PRICE' in globals() else 0.0000001
+        max_price = MAX_VALID_PRICE if 'MAX_VALID_PRICE' in globals() else 1000000
+        return min_price <= float(price) <= max_price
+    except (ValueError, TypeError):
+        return False
+
+def validate_volume(volume: float) -> bool:
+    """Valide qu'un volume est dans une plage acceptable"""
+    if volume is None:
+        return False
+    try:
+        min_vol = MIN_VALID_VOLUME if 'MIN_VALID_VOLUME' in globals() else 0
+        max_vol = MAX_VALID_VOLUME if 'MAX_VALID_VOLUME' in globals() else 1e12
+        return min_vol <= float(volume) <= max_vol
+    except (ValueError, TypeError):
+        return False
+
+def validate_token_data(data: Dict) -> Tuple[bool, List[str]]:
+    """Valide les données d'un token
+    
+    Returns:
+        Tuple (is_valid, errors_list)
+    """
+    errors = []
+    
+    if not data:
+        return False, ["Données vides"]
+    
+    # Validation du prix
+    if 'price' in data and data['price'] is not None:
+        if not validate_price(data['price']):
+            errors.append(f"Prix invalide: {data['price']}")
+    
+    # Validation du volume
+    if 'volume_24h' in data and data['volume_24h'] is not None:
+        if not validate_volume(data['volume_24h']):
+            errors.append(f"Volume invalide: {data['volume_24h']}")
+    
+    # Validation de la liquidité
+    if 'liquidity' in data and data['liquidity'] is not None:
+        try:
+            liq = float(data['liquidity'])
+            min_liq = MIN_VALID_LIQUIDITY if 'MIN_VALID_LIQUIDITY' in globals() else 0
+            max_liq = MAX_VALID_LIQUIDITY if 'MAX_VALID_LIQUIDITY' in globals() else 1e12
+            if not (min_liq <= liq <= max_liq):
+                errors.append(f"Liquidité invalide: {liq}")
+        except (ValueError, TypeError):
+            errors.append(f"Liquidité non numérique: {data['liquidity']}")
+    
+    return len(errors) == 0, errors
+
+# Importer les fonctions de previsions_dex
+try:
+    from previsions_dex import (
+        fetch_birdeye_token_overview,
+        calculate_realtime_variations,
+        fetch_ohlcv_geckoterminal,
+        calculate_rsi,
+        multi_rsi,
+        BIRDEYE_API_KEY
+    )
+    PREVISIONS_DEX_AVAILABLE = True
+    logger.info("✓ Fonctions previsions_dex importées avec succès")
+except ImportError as e:
+    logger.warning(f"Impossible d'importer previsions_dex: {e}")
+    PREVISIONS_DEX_AVAILABLE = False
+    BIRDEYE_API_KEY = None
+
+logger.info("Backtesting utilise uniquement les données on-chain (Birdeye, GeckoTerminal)")
+
+
+class CryptoDatabase:
+    """Gestion de la base de données SQLite pour le backtesting"""
+    
+    def __init__(self, db_path: str = None):
+        self.db_path = db_path if db_path else (DB_PATH if 'DB_PATH' in globals() else "crypto_backtesting.db")
+        self.conn = None
+        self.timeout = DB_TIMEOUT if 'DB_TIMEOUT' in globals() else 20
+        self.init_database()
+        logger.info(f"Base de données initialisée: {self.db_path}")
+    
+    def __enter__(self):
+        """Support du context manager"""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Fermeture automatique de la connexion"""
+        self.close()
+    
+    def close(self):
+        """Ferme la connexion à la base de données"""
+        if self.conn:
+            try:
+                self.conn.close()
+                logger.info("Connexion à la base de données fermée")
+            except Exception as e:
+                logger.error(f"Erreur lors de la fermeture de la connexion: {e}")
+    
+    @contextmanager
+    def get_cursor(self):
+        """Context manager pour les curseurs avec commit automatique"""
+        cursor = self.conn.cursor()
+        try:
+            yield cursor
+            self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            logger.error(f"Erreur transaction SQLite: {e}")
+            raise
+        finally:
+            cursor.close()
+    
+    def init_database(self):
+        """Initialise la base de données avec toutes les tables nécessaires"""
+        self.conn = sqlite3.connect(self.db_path, timeout=self.timeout)
+        # Optimisations SQLite
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA synchronous=NORMAL")
+        self.conn.execute("PRAGMA cache_size=-64000")  # 64MB
+        
+        cursor = self.conn.cursor()
+        
+        # Table des tokens suivis
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                address TEXT UNIQUE NOT NULL,
+                name TEXT,
+                symbol TEXT,
+                chain TEXT DEFAULT 'solana',
+                first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Table des snapshots de données (un snapshot = toutes les données à un moment T)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS token_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_id INTEGER NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                -- Prix et market cap
+                price REAL,
+                price_dune REAL,
+                price_before REAL,  -- Prix de la bougie précédente (pattern detection)
+                price_after REAL,   -- Prix de la bougie suivante (pattern detection)
+                market_cap REAL,
+                liquidity REAL,
+                
+                -- Makers (unique wallets) par timeframe
+                makers_1m INTEGER,
+                makers_5m INTEGER,
+                makers_30m INTEGER,
+                makers_1h INTEGER,
+                makers_2h INTEGER,
+                makers_4h INTEGER,
+                makers_6h INTEGER,
+                makers_8h INTEGER,
+                makers_12h INTEGER,
+                makers_24h INTEGER,
+                
+                -- TXNs (trades) par timeframe
+                txns_1m INTEGER,
+                txns_5m INTEGER,
+                txns_30m INTEGER,
+                txns_1h INTEGER,
+                txns_2h INTEGER,
+                txns_4h INTEGER,
+                txns_6h INTEGER,
+                txns_8h INTEGER,
+                txns_24h INTEGER,
+                
+                -- Volume par timeframe
+                volume_30m REAL,
+                volume_1h REAL,
+                volume_4h REAL,
+                volume_6h REAL,
+                volume_8h REAL,
+                volume_24h REAL,
+                
+                -- Variations calculées (delta %)
+                makers_delta_1h REAL,
+                makers_delta_6h REAL,
+                txns_delta_1h REAL,
+                txns_delta_6h REAL,
+                
+                -- Prix change
+                price_change_24h REAL,
+                
+                -- RSI
+                rsi_3d REAL,
+                rsi_7d REAL,
+                rsi_30d REAL,
+                
+
+                
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        # Index pour améliorer les performances
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_snapshots_token_time 
+            ON token_snapshots(token_id, timestamp)
+        """)
+        
+        # Table des pumps détectés (numérotés par adresse)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pumps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_id INTEGER NOT NULL,
+                pump_number INTEGER NOT NULL,
+                
+                -- Catégorie du pump
+                pump_category TEXT,
+                pump_level INTEGER,
+                
+                -- Timing
+                detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                start_time TIMESTAMP,
+                end_time TIMESTAMP,
+                duration_minutes INTEGER,
+                duration_hours REAL,
+                
+                -- Métriques du pump
+                price_start REAL,
+                price_end REAL,
+                price_max REAL,
+                price_increase_pct REAL,
+                
+                volume_start REAL,
+                volume_end REAL,
+                volume_increase_pct REAL,
+                
+                -- Données au moment du pump
+                makers_before INTEGER,
+                makers_during INTEGER,
+                makers_increase_pct REAL,
+                
+                txns_before INTEGER,
+                txns_during INTEGER,
+                txns_increase_pct REAL,
+                
+                -- Liquidité au moment du pump
+                liquidity_before REAL,
+                liquidity_during REAL,
+                
+                -- Market cap
+                mcap_before REAL,
+                mcap_during REAL,
+                
+                -- RSI au moment du pump
+                rsi_before REAL,
+                rsi_during REAL,
+                
+                -- Snapshot avant le pump (pour analyse)
+                snapshot_before_id INTEGER,
+                snapshot_during_id INTEGER,
+                
+                -- Métadonnées
+                notes TEXT,
+                source TEXT DEFAULT 'realtime',
+                
+                -- Analyse prédictive
+                predictability_score REAL,
+                pattern_detected TEXT,
+                similar_pumps_count INTEGER DEFAULT 0,
+                
+                -- Gestion des séquences de pumps consécutifs
+                pump_sequence_id TEXT,
+                is_part_of_sequence BOOLEAN DEFAULT 0,
+                cumulative_increase_pct REAL,
+                sequence_position INTEGER,
+                
+                FOREIGN KEY (token_id) REFERENCES tokens(id),
+                FOREIGN KEY (snapshot_before_id) REFERENCES token_snapshots(id),
+                FOREIGN KEY (snapshot_during_id) REFERENCES token_snapshots(id),
+                UNIQUE(token_id, pump_number)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pumps_category 
+            ON pumps(pump_category, pump_level)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pumps_sequence 
+            ON pumps(pump_sequence_id)
+        """)
+        
+        # ========== TABLES POUR LES DUMPS (CHUTES DE PRIX) ==========
+        
+        # Table des dumps détectés (numérotés par adresse)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dumps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_id INTEGER NOT NULL,
+                dump_number INTEGER NOT NULL,
+                
+                -- Catégorie du dump
+                dump_category TEXT,
+                dump_level INTEGER,
+                
+                -- Timing
+                detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                start_time TIMESTAMP,
+                end_time TIMESTAMP,
+                duration_minutes INTEGER,
+                duration_hours REAL,
+                
+                -- Métriques du dump
+                price_start REAL,
+                price_end REAL,
+                price_min REAL,
+                price_decrease_pct REAL,
+                
+                volume_start REAL,
+                volume_end REAL,
+                volume_change_pct REAL,
+                
+                -- Données au moment du dump
+                makers_before INTEGER,
+                makers_during INTEGER,
+                makers_change_pct REAL,
+                
+                txns_before INTEGER,
+                txns_during INTEGER,
+                txns_change_pct REAL,
+                
+                -- Liquidité au moment du dump
+                liquidity_before REAL,
+                liquidity_during REAL,
+                
+                -- Market cap
+                mcap_before REAL,
+                mcap_during REAL,
+                
+                -- RSI au moment du dump
+                rsi_before REAL,
+                rsi_during REAL,
+                
+                -- Snapshot avant le dump (pour analyse)
+                snapshot_before_id INTEGER,
+                snapshot_during_id INTEGER,
+                
+                -- Métadonnées
+                notes TEXT,
+                source TEXT DEFAULT 'realtime',
+                
+                -- Analyse prédictive
+                predictability_score REAL,
+                pattern_detected TEXT,
+                similar_dumps_count INTEGER DEFAULT 0,
+                
+                -- Gestion des séquences de dumps consécutifs
+                dump_sequence_id TEXT,
+                is_part_of_sequence BOOLEAN DEFAULT 0,
+                cumulative_decrease_pct REAL,
+                sequence_position INTEGER,
+                
+                FOREIGN KEY (token_id) REFERENCES tokens(id),
+                FOREIGN KEY (snapshot_before_id) REFERENCES token_snapshots(id),
+                FOREIGN KEY (snapshot_during_id) REFERENCES token_snapshots(id),
+                UNIQUE(token_id, dump_number)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_dumps_category 
+            ON dumps(dump_category, dump_level)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_dumps_sequence 
+            ON dumps(dump_sequence_id)
+        """)
+        
+        # Table des signatures de dump (patterns récurrents)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dump_signatures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dump_id INTEGER NOT NULL,
+                
+                -- Conditions avant le dump
+                rsi_range TEXT,
+                liquidity_level TEXT,
+                volume_trend TEXT,
+                makers_trend TEXT,
+                price_volatility REAL,
+                
+                -- Pattern détecté
+                pattern_type TEXT,
+                confidence_score REAL,
+                
+                -- Indicateurs clés
+                volume_spike_ratio REAL,
+                makers_spike_ratio REAL,
+                liquidity_change_pct REAL,
+                
+                -- Timing
+                time_of_day INTEGER,
+                day_of_week INTEGER,
+                
+                -- Métadonnées
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (dump_id) REFERENCES dumps(id)
+            )
+        """)
+        
+        # Table des top wallets avant dump
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dump_top_wallets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dump_id INTEGER NOT NULL,
+                token_id INTEGER NOT NULL,
+                
+                -- Wallet info
+                wallet_address TEXT NOT NULL,
+                wallet_rank INTEGER,
+                
+                -- Activité avant le dump
+                sell_amount_usd REAL,
+                sell_count INTEGER,
+                hours_before_dump REAL,
+                
+                -- Type de wallet
+                wallet_type TEXT,
+                is_whale BOOLEAN,
+                
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (dump_id) REFERENCES dumps(id),
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        # Table des patterns de bougies avant dump
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dump_candle_patterns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dump_id INTEGER NOT NULL,
+                token_id INTEGER NOT NULL,
+                
+                -- Bougies avant le dump (jusqu'à -12h)
+                candle_12h_before TEXT,
+                candle_11h_before TEXT,
+                candle_10h_before TEXT,
+                candle_9h_before TEXT,
+                candle_8h_before TEXT,
+                candle_7h_before TEXT,
+                candle_6h_before TEXT,
+                candle_5h_before TEXT,
+                candle_4h_before TEXT,
+                candle_3h_before TEXT,
+                candle_2h_before TEXT,
+                candle_1h_before TEXT,
+                
+                -- Patterns détectés
+                dominant_pattern TEXT,
+                confidence_score REAL,
+                
+                -- Analyse de tendance
+                price_trend_12h TEXT,
+                price_trend_6h TEXT,
+                price_trend_3h TEXT,
+                
+                -- Indicateurs d'accumulation/distribution avant dump
+                accumulation_phase BOOLEAN,
+                distribution_phase BOOLEAN,
+                
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (dump_id) REFERENCES dumps(id),
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        # ========== FIN DES TABLES DUMPS ==========
+        
+        # Table des signatures de pump (patterns récurrents)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pump_signatures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pump_id INTEGER NOT NULL,
+                
+                -- Conditions avant le pump
+                rsi_range TEXT,
+                liquidity_level TEXT,
+                volume_trend TEXT,
+                makers_trend TEXT,
+                price_volatility REAL,
+                
+                -- Pattern détecté
+                pattern_type TEXT,
+                confidence_score REAL,
+                
+                -- Indicateurs clés
+                volume_spike_ratio REAL,
+                makers_spike_ratio REAL,
+                liquidity_change_pct REAL,
+                
+                -- Timing
+                time_of_day INTEGER,
+                day_of_week INTEGER,
+                
+                -- Métadonnées
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (pump_id) REFERENCES pumps(id)
+            )
+        """)
+        
+        # Table des top wallets avant pump
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pump_top_wallets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pump_id INTEGER NOT NULL,
+                token_id INTEGER NOT NULL,
+                
+                -- Wallet info
+                wallet_address TEXT NOT NULL,
+                wallet_rank INTEGER,
+                
+                -- Activité avant le pump
+                buy_amount_usd REAL,
+                buy_count INTEGER,
+                hours_before_pump REAL,
+                
+                -- Type de wallet
+                wallet_type TEXT,
+                is_whale BOOLEAN,
+                
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (pump_id) REFERENCES pumps(id),
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        # Table des patterns de bougies avant pump
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pump_candle_patterns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pump_id INTEGER NOT NULL,
+                token_id INTEGER NOT NULL,
+                
+                -- Bougies avant le pump (jusqu'à -12h)
+                candle_12h_before TEXT,
+                candle_11h_before TEXT,
+                candle_10h_before TEXT,
+                candle_9h_before TEXT,
+                candle_8h_before TEXT,
+                candle_7h_before TEXT,
+                candle_6h_before TEXT,
+                candle_5h_before TEXT,
+                candle_4h_before TEXT,
+                candle_3h_before TEXT,
+                candle_2h_before TEXT,
+                candle_1h_before TEXT,
+                
+                -- Patterns détectés
+                pattern_name TEXT,
+                pattern_strength REAL,
+                
+                -- Mouvements de prix
+                price_trend_5h TEXT,  -- 'up', 'down', 'sideways'
+                accumulation_phase BOOLEAN,  -- Prix baisse mais volume augmente
+                volume_spike_before BOOLEAN,
+                
+                -- Variations avant pump
+                price_change_1h_pct REAL,
+                price_change_3h_pct REAL,
+                volume_change_1h_pct REAL,
+                
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (pump_id) REFERENCES pumps(id),
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_candle_patterns_pump 
+            ON pump_candle_patterns(pump_id)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_top_wallets_pump 
+            ON pump_top_wallets(pump_id, is_whale)
+        """)
+        
+        # Table des statistiques agrégées par token
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS token_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_id INTEGER UNIQUE NOT NULL,
+                
+                -- Compteurs
+                total_snapshots INTEGER DEFAULT 0,
+                total_pumps INTEGER DEFAULT 0,
+                
+                -- Moyennes globales
+                avg_makers_24h REAL,
+                avg_txns_24h REAL,
+                avg_volume_24h REAL,
+                avg_price REAL,
+                
+                -- Moyennes sur les pumps
+                avg_pump_price_increase REAL,
+                avg_pump_duration REAL,
+                max_pump_price_increase REAL,
+                
+                -- Dernières valeurs
+                last_price REAL,
+                last_makers_24h INTEGER,
+                last_txns_24h INTEGER,
+                last_volume_24h REAL,
+                
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (token_id) REFERENCES tokens(id)
+            )
+        """)
+        
+        # Table des statistiques agrégées par catégorie de pump (moyennes globales)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pump_category_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pump_category TEXT UNIQUE NOT NULL,
+                
+                -- Compteurs
+                total_pumps INTEGER DEFAULT 0,
+                total_tokens INTEGER DEFAULT 0,
+                
+                -- Moyennes de prix
+                avg_price_start REAL,
+                avg_price_increase_pct REAL,
+                median_price_increase_pct REAL,
+                max_price_increase_pct REAL,
+                min_price_increase_pct REAL,
+                
+                -- Moyennes de volume
+                avg_volume_start REAL,
+                avg_volume_increase_pct REAL,
+                median_volume_increase_pct REAL,
+                
+                -- Moyennes makers
+                avg_makers_before INTEGER,
+                avg_makers_increase_pct REAL,
+                median_makers_increase_pct REAL,
+                
+                -- Moyennes transactions
+                avg_txns_before INTEGER,
+                avg_txns_increase_pct REAL,
+                median_txns_increase_pct REAL,
+                
+                -- Moyennes liquidité
+                avg_liquidity_before REAL,
+                avg_liquidity_during REAL,
+                
+                -- Moyennes market cap
+                avg_mcap_before REAL,
+                avg_mcap_during REAL,
+                
+                -- Moyennes RSI
+                avg_rsi_before REAL,
+                avg_rsi_during REAL,
+                
+                -- Moyennes durée
+                avg_duration_hours REAL,
+                median_duration_hours REAL,
+                
+                -- Métadonnées
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                UNIQUE(pump_category)
+            )
+        """)
+        
+        # Index pour les catégories
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_category_stats 
+            ON pump_category_stats(pump_category)
+        """)
+        
+        # Table pour l'historique du prix de Solana (pour corrélation)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS solana_price_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TIMESTAMP NOT NULL,
+                date TEXT NOT NULL,
+                price REAL NOT NULL,
+                market_cap REAL,
+                volume_24h REAL,
+                price_change_24h REAL,
+                price_change_7d REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(timestamp)
+            )
+        """)
+        
+        # Index pour les recherches par date
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_solana_date 
+            ON solana_price_history(date)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_solana_timestamp 
+            ON solana_price_history(timestamp)
+        """)
+        
+        self.conn.commit()
+        logger.info(f"Base de données initialisée: {self.db_path}")
+    
+    def get_or_create_token(self, address: str, name: str = None, 
+                           symbol: str = None, chain: str = "solana") -> int:
+        """Récupère ou crée un token, retourne son ID"""
+        cursor = self.conn.cursor()
+        
+        # Vérifier si le token existe
+        cursor.execute("SELECT id FROM tokens WHERE address = ?", (address,))
+        row = cursor.fetchone()
+        
+        if row:
+            return row[0]
+        
+        # Créer le token
+        cursor.execute("""
+            INSERT INTO tokens (address, name, symbol, chain)
+            VALUES (?, ?, ?, ?)
+        """, (address, name, symbol, chain))
+        
+        self.conn.commit()
+        return cursor.lastrowid
+    
+    def add_snapshot(self, token_id: int, data: Dict) -> int:
+        """Ajoute un snapshot de données pour un token"""
+        cursor = self.conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO token_snapshots (
+                token_id, timestamp,
+                price, price_dune, market_cap, liquidity,
+                makers_1m, makers_5m, makers_30m, makers_1h, makers_2h,
+                makers_4h, makers_6h, makers_8h, makers_12h, makers_24h,
+                txns_1m, txns_5m, txns_30m, txns_1h, txns_2h, txns_4h,
+                txns_6h, txns_8h, txns_24h,
+                volume_30m, volume_1h, volume_4h, volume_6h, volume_8h, volume_24h,
+                makers_delta_1h, makers_delta_6h, txns_delta_1h, txns_delta_6h,
+                price_change_24h,
+                rsi_3d, rsi_7d, rsi_30d
+            ) VALUES (
+                ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?,
+                ?, ?, ?
+            )
+        """, (
+            token_id, data.get('timestamp', datetime.now()),
+            data.get('price'), data.get('price_dune'), data.get('market_cap'), data.get('liquidity'),
+            data.get('makers_1m'), data.get('makers_5m'), data.get('makers_30m'),
+            data.get('makers_1h'), data.get('makers_2h'), data.get('makers_4h'),
+            data.get('makers_6h'), data.get('makers_8h'), data.get('makers_12h'),
+            data.get('makers_24h'),
+            data.get('txns_1m'), data.get('txns_5m'), data.get('txns_30m'),
+            data.get('txns_1h'), data.get('txns_2h'), data.get('txns_4h'), data.get('txns_6h'),
+            data.get('txns_8h'), data.get('txns_24h'),
+            data.get('volume_30m'), data.get('volume_1h'), data.get('volume_4h'),
+            data.get('volume_6h'), data.get('volume_8h'), data.get('volume_24h'),
+            data.get('makers_delta_1h'), data.get('makers_delta_6h'),
+            data.get('txns_delta_1h'), data.get('txns_delta_6h'),
+            data.get('price_change_24h'),
+            data.get('rsi_3d'), data.get('rsi_7d'), data.get('rsi_30d')
+        ))
+        
+        self.conn.commit()
+        return cursor.lastrowid
+    
+    def add_pump(self, token_id: int, pump_data: Dict) -> int:
+        """Ajoute un pump détecté avec numérotation automatique"""
+        cursor = self.conn.cursor()
+        
+        # Récupérer le prochain numéro de pump pour ce token
+        cursor.execute("""
+            SELECT COALESCE(MAX(pump_number), 0) + 1
+            FROM pumps
+            WHERE token_id = ?
+        """, (token_id,))
+        
+        pump_number = cursor.fetchone()[0]
+        
+        # Déterminer la catégorie et le niveau du pump
+        price_increase = pump_data.get('price_increase_pct', 0)
+        pump_category, pump_level = self._categorize_pump(price_increase)
+        
+        cursor.execute("""
+            INSERT INTO pumps (
+                token_id, pump_number,
+                pump_category, pump_level,
+                start_time, end_time, duration_minutes, duration_hours,
+                price_start, price_end, price_max, price_increase_pct,
+                volume_start, volume_end, volume_increase_pct,
+                makers_before, makers_during, makers_increase_pct,
+                txns_before, txns_during, txns_increase_pct,
+                liquidity_before, liquidity_during,
+                mcap_before, mcap_during,
+                rsi_before, rsi_during,
+                snapshot_before_id, snapshot_during_id,
+                notes, source,
+                pump_sequence_id, is_part_of_sequence, cumulative_increase_pct, sequence_position
+            ) VALUES (
+                ?, ?,
+                ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?, ?, ?
+            )
+        """, (
+            token_id, pump_number,
+            pump_category, pump_level,
+            pump_data.get('start_time'), pump_data.get('end_time'),
+            pump_data.get('duration_minutes'), pump_data.get('duration_hours'),
+            pump_data.get('price_start'), pump_data.get('price_end'),
+            pump_data.get('price_max'), pump_data.get('price_increase_pct'),
+            pump_data.get('volume_start'), pump_data.get('volume_end'),
+            pump_data.get('volume_increase_pct'),
+            pump_data.get('makers_before'), pump_data.get('makers_during'),
+            pump_data.get('makers_increase_pct'),
+            pump_data.get('txns_before'), pump_data.get('txns_during'),
+            pump_data.get('txns_increase_pct'),
+            pump_data.get('liquidity_before'), pump_data.get('liquidity_during'),
+            pump_data.get('mcap_before'), pump_data.get('mcap_during'),
+            pump_data.get('rsi_before'), pump_data.get('rsi_during'),
+            pump_data.get('snapshot_before_id'), pump_data.get('snapshot_during_id'),
+            pump_data.get('notes'), pump_data.get('source', 'realtime'),
+            pump_data.get('pump_sequence_id'), pump_data.get('is_part_of_sequence', 0),
+            pump_data.get('cumulative_increase_pct'), pump_data.get('sequence_position')
+        ))
+        
+        self.conn.commit()
+        print

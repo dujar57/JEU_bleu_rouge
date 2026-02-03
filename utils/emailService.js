@@ -37,7 +37,7 @@ const sendVerificationEmail = async (user, token) => {
   const transporter = createTransporter();
   
   // URL de vérification
-  const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.APP_URL || 'https://jeu-bleu-rouge.onrender.com'}/verify-email?token=${token}`;
   
   const mailOptions = {
     from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
@@ -198,7 +198,7 @@ const sendWelcomeEmail = async (user) => {
               <li>✅ Affronter d'autres joueurs</li>
             </ul>
             <p style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.APP_URL || 'http://localhost:3000'}" 
+              <a href="${process.env.APP_URL || 'https://jeu-bleu-rouge.onrender.com'}" 
                  style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; text-decoration: none; border-radius: 25px; font-weight: bold;">
                 🎮 Commencer à jouer

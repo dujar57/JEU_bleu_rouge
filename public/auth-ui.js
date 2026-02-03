@@ -1,3 +1,5 @@
+// -*- coding: utf-8 -*-
+// @charset "UTF-8"
 // auth-ui.js - Gestion de l'interface d'authentification
 const API_URL = window.location.origin;
 let currentUser = null;

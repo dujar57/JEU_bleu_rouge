@@ -2,80 +2,109 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Jeu Bleu/Rouge</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .auth-container {
-            max-width: 400px;
+            max-width: 450px;
             margin: 50px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 40px;
+            background: linear-gradient(145deg, #1a2035, #12172b);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            border: 2px solid rgba(0, 119, 255, 0.3);
         }
         .auth-form {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px;
         }
         .auth-input {
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+            padding: 18px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            font-size: 18px;
+            background: rgba(10, 14, 26, 0.8);
+            color: white;
+            transition: all 0.3s;
+        }
+        .auth-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+        .auth-input::placeholder {
+            color: rgba(255,255,255,0.5);
         }
         .auth-button {
-            padding: 12px;
-            background: #007bff;
+            padding: 18px;
+            background: linear-gradient(135deg, #0077ff 0%, #00d4ff 100%);
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 12px;
+            font-size: 20px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .auth-button:hover {
-            background: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 119, 255, 0.5);
         }
         .auth-link {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
         }
         .auth-link a {
-            color: #007bff;
+            color: #00d4ff;
             text-decoration: none;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .auth-link a:hover {
+            text-decoration: underline;
         }
         .error-message {
-            color: #dc3545;
-            padding: 10px;
-            background: #f8d7da;
-            border-radius: 5px;
-            margin-bottom: 15px;
+            color: #ff6b6b;
+            padding: 15px;
+            background: rgba(255, 107, 107, 0.15);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
         }
         .success-message {
-            color: #155724;
-            padding: 10px;
-            background: #d4edda;
-            border-radius: 5px;
-            margin-bottom: 15px;
+            color: #00ff88;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
         }
         .skip-auth {
             text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid rgba(255,255,255,0.1);
         }
         .skip-auth a {
-            color: #6c757d;
+            color: rgba(255,255,255,0.6);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 16px;
+        }
+        .skip-auth a:hover {
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <h1 style="text-align: center; color: #333;">Connexion</h1>
+        <h1 style="text-align: center; color: #00d4ff; font-size: 2rem; margin-bottom: 30px;">🔐 Connexion</h1>
         
         <div id="errorMessage" style="display: none;" class="error-message"></div>
         

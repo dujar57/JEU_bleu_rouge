@@ -1,3 +1,5 @@
+// -*- coding: utf-8 -*-
+// @charset "UTF-8"
 // Créer des étoiles animées dans le fond
 function createSpaceBackground() {
     const particles = document.getElementById('particles');

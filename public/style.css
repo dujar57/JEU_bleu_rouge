@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* Reset et variables */
 * {
     margin: 0;
@@ -29,9 +30,11 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
+    font-size: 18px;
+    line-height: 1.6;
 }
 
-/* Particules animÃƒÂ©es en arriÃƒÂ¨re-plan */
+/* Particules animées en arrière-plan */
 .particles {
     position: fixed;
     top: 0;
@@ -86,7 +89,7 @@ body {
     justify-content: center;
 }
 
-/* Gestion des ÃƒÂ©crans */
+/* Gestion des écrans */
 .screen {
     display: none;
     animation: fadeIn 0.5s ease-out;
@@ -160,20 +163,21 @@ body {
 /* Boutons */
 .btn {
     position: relative;
-    padding: 18px 40px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 22px 48px;
+    font-size: 1.3rem;
+    font-weight: 700;
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 
 .btn::before {
@@ -194,26 +198,28 @@ body {
 .btn-primary {
     background: var(--gradient-blue);
     color: white;
-    box-shadow: 0 8px 32px var(--blue-glow);
+    box-shadow: 0 10px 40px var(--blue-glow);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 48px var(--blue-glow);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 56px var(--blue-glow);
 }
 
 .btn-secondary {
     background: var(--gradient-dark);
     color: white;
-    border: 2px solid var(--blue-primary);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border: 3px solid var(--blue-primary);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    font-weight: 700;
 }
 
 .btn-secondary:hover {
     background: var(--dark-lighter);
     border-color: var(--blue-primary);
-    box-shadow: 0 8px 32px var(--blue-glow);
-    transform: translateY(-2px);
+    box-shadow: 0 10px 40px var(--blue-glow);
+    transform: translateY(-3px);
 }
 
 .btn-lg {
@@ -314,30 +320,32 @@ body {
 
 .form-group label {
     display: block;
-    font-weight: 600;
-    margin-bottom: 10px;
+    font-weight: 700;
+    margin-bottom: 12px;
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 1.1rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
 }
 
 .form-group input {
     width: 100%;
-    padding: 16px 20px;
-    font-size: 1.1rem;
+    padding: 20px 24px;
+    font-size: 1.2rem;
     background: var(--dark-bg);
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     color: var(--text-primary);
     transition: all 0.3s;
     font-family: 'Inter', sans-serif;
+    font-weight: 500;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--blue-primary);
-    box-shadow: 0 0 20px var(--blue-glow);
+    box-shadow: 0 0 24px var(--blue-glow);
+    background: rgba(18, 23, 43, 0.9);
 }
 
 .form-group small {
@@ -449,7 +457,7 @@ body {
     font-size: 1.5rem;
 }
 
-/* Ãƒâ€°cran de jeu */
+/* Écran de jeu */
 .game-header {
     display: flex;
     justify-content: space-between;
@@ -712,7 +720,7 @@ body {
 }
 
 
-/* Section RÃƒÂ¨gles du jeu */
+/* Section Règles du jeu */
 .rules-toggle {
     margin: 2rem 0 1rem 0;
     text-align: center;
@@ -797,7 +805,7 @@ body {
 }
 
 .rule-block li:before {
-    content: "Ã¢â‚¬Â¢";
+    content: "•";
     position: absolute;
     left: 0;
     color: #4a90e2;
