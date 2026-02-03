@@ -52,8 +52,6 @@ router.post('/register', async (req, res) => {
     
     // Envoyer l'email de vérification
     // const emailSent = await sendVerificationEmail(user, verificationToken);
-    
-    // if (!emailSent) { console.warn('Email skipped'); }
 
     // Créer le token JWT (l'utilisateur peut se connecter mais certaines fonctionnalités nécessitent la vérification)
     const token = jwt.sign(
