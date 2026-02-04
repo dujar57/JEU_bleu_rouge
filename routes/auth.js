@@ -201,5 +201,5 @@ router.post('/resend-verification', auth, async (req, res) => {
   }
 });
 
-module.exports = { router, auth };
+module.exports = router;
 
