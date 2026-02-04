@@ -7,7 +7,7 @@
     <title>Bleu vs Rouge - Jeu d'infiltration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bungee&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -16,22 +16,22 @@
         }
 
         body {
-            font-family: 'Courier Prime', 'Courier New', monospace;
-            background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 100%);
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            background: #4FA8A8;
             background-image: 
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.2) 2px, rgba(0,0,0,.2) 4px),
-                linear-gradient(135deg, #3d2817 0%, #1a0f0a 100%);
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(0,0,0,.03) 35px, rgba(0,0,0,.03) 70px);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: #f4e4c1;
+            color: #2C3E50;
             position: relative;
             overflow: hidden;
             padding: 20px;
         }
 
-        /* Effet papier ancien */
+        /* Effet scanlines rétro */
         body::before {
             content: '';
             position: fixed;
@@ -39,103 +39,173 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
             pointer-events: none;
-            opacity: 0.3;
+            z-index: 1;
         }
 
-        /* Vignette vintage */
+        /* Bordure décorative années 90 */
         body::after {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            box-shadow: inset 0 0 200px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
-
-        .container {
-            background: linear-gradient(135deg, #f4e4c1 0%, #e8d5b7 100%);
-            border-radius: 8px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px#E8D5B7;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 50%);
+            border-radius: 20px;
             padding: 50px 40px;
-            max-width: 650px;
+            max-width: 750px;
             width: 100%;
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.8),
-                inset 0 1px 0 rgba(255,255,255,0.3),
-                0 0 0 1px rgba(0,0,0,0.3);
-            border: 3px solid #8b6f47;
+                0 0 0 8px #E8D5B7,
+                0 0 0 12px #2C5F7F,
+                0 0 0 16px #E8D5B7,
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                inset 0 5px 15px rgba(255,255,255,0.4),
+                inset 0 -5px 15px rgba(0,0,0,0.2);
+            border: 4px solid #2C5F7F;
             text-align: center;
+            position: relative;
+            z-index: 2;
+            color: #2C3E50;
+        }
+
+        /* Motif décoratif années 90 */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(44, 95, 127, 0.1) 10px,
+                rgba(44, 95, 127, 0.1) 12px
+            );
+            pointer-events: none;
+            border-radius: 20px;
+            z-index: -1;
             position: relative;
             z-index: 1;
             color: #2c1810;
         }
 
-        /* Effet papier froissé */
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
-            pointer-events: none;
-            border-radius: 8px;
-        }
-
-        /* Logo circulaire */
+        /* Effet papier fro- Style années 90 */
         .logo-circle {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 30px;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 35px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8b6f47 0%, #6b5638 100%);
-            border: 4px solid #2c1810;
+            background: #E8D5B7;
+            border: 8px solid #2C5F7F;
             box-shadow: 
-                0 8px 16px rgba(0,0,0,0.4),
-                inset 0 2px 4px rgba(255,255,255,0.2);
+                0 0 0 4px #E8D5B7,
+                0 0 0 8px #4FA8A8,
+                0 15px 30px rgba(0,0,0,0.4),
+                inset 0 3px 8px rgba(255,255,255,0.4),
+                inset 0 -3px 8px rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             overflow: hidden;
+            animation: floatLogo 3s ease-in-out infinite;
+        }
+
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
         }
 
         .logo-circle img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .logo-circle.placeholder::before {
-            content: '🎭';
-            font-size: 60px;
-        }
-
-        .logo h1 {
-            font-family: 'Special Elite', cursive;
-            font-size: 46px;
+            border-radius:Bangers', cursive;
+            font-size: 68px;
             font-weight: 900;
-            margin-bottom: 15px;
-            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
-            letter-spacing: 4px;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            line-height: 1;
+            text-transform: uppercase;
         }
 
         .blue {
-            color: #2563eb;
-            text-shadow: 2px 2px 0 rgba(37, 99, 235, 0.3);
+            color: #2C5F7F;
+            text-shadow: 
+                4px 4px 0 rgba(44, 95, 127, 0.3),
+                -2px -2px 0 #fff;
+            display: inline-block;
+            transform: rotate(-3deg);
         }
 
         .vs {
-            color: #7c6a46;
-            font-size: 36px;
-            margin: 0 15px;
-            font-style: italic;
+            color: #E8D5B7;
+            font-size: 48px;
+            margin: 0 20px;
+            font-family: 'Bebas Neue', cursive;
+            text-shadow: 
+                2px 2px 0 #2C5F7F,
+                4px 4px 0 #E74C3C;
+            display: inline-block;
+            transform: scale(1.2);
         }
+
+        .red {
+            color: #E74C3C;
+            text-shadow: 
+                4px 4px 0 rgba(231, 76, 60, 0.3),
+                -2px -2px 0 #fff;
+            display: inline-block;
+            transform: rotate(3deg);
+        }
+
+        .tagline {
+            font-size: 20px;
+            color: #2C5F7F;
+            margin-bottom: 40px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-family: 'Bebas Neue', cursive;
+            text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+            background: linear-gradient(90deg, #2C5F7F, #E74C3C, #2C5F7F);
+            -webkit-background-clip: text;
+            -webkit-te5px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%);
+            border: 4px dashed #2C5F7F;
+            border-radius: 15px;
+            text-align: left;
+            font-size: 17px;
+            line-height: 1.9;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.5),
+                inset 0 -2px 4px rgba(0,0,0,0.1),
+                0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .description p {
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .description strong {
+            color: #E74C3C;
+            font-weight: 900;
+            font-size: 18px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5)
 
         .red {
             color: #dc2626;
@@ -154,60 +224,60 @@
 
         .description {
             margin-bottom: 40px;
-            padding: 20px;
-            background: rgba(0,0,0,0.05);
-            border-left: 4px solid #8b6f47;
-            border-right: 4px solid #8b6f47;
-            text-align: left;
-            font-size: 16px;
-            line-height: 1.8;
-        }
-
-        .description p {
-            margin-bottom: 12px;
-        }
-
-        .description strong {
-            color: #2c1810;
-            font-weight: 700;
-        }
-
-        .buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            margin-bottom: 35px;
-        }
-
-        button {
-            padding: 18px 40px;
-            font-size: 18px;
-            font-weight: 700;
-            border: 3px solid #2c1810;
-            border-radius: 6px;
+            padding: 20px 45px;
+            font-size: 22px;
+            font-weight: 900;
+            border: 5px solid #2C3E50;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            font-family: 'Special Elite', cursive;
+            font-family: 'Bangers', cursive;
             box-shadow: 
-                0 6px 0 #1a0f0a,
-                0 8px 12px rgba(0,0,0,0.3);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 8px 0 #1a0f0a,
+                0 8px 0 #2C3E50,
                 0 12px 20px rgba(0,0,0,0.4);
         }
 
-        button:active {
-            transform: translateY(2px);
+        button:hover {
+            transform: translateY(-3px) scale(1.02);
             box-shadow: 
-                0 2px 0 #1a0f0a,
+                0 11px 0 #2C3E50,
+                0 15px 25px rgba(0,0,0,0.5);
+        }
+
+        button:active {
+            transform: translateY(5px);
+            box-shadow: 
+                0 3px 0 #2C3E50,
+                0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        button span {
+            position: relative;
+            z-index: 1;
+            display: block;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #5DADE2 0%, #2C5F7F 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(180deg, #7FC4EE 0%, #2C5F7F 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(180deg, #EC7063 0%, #C0392B 100%);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(180deg, #F1948A 0%, #E74C3C
                 0 4px 8px rgba(0,0,0,0.3);
         }
 
@@ -230,50 +300,56 @@
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-        }
-
-        .auth-links {
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 2px dashed #8b6f47;
-            font-size: 16px;
-            font-weight: 700;
+        }30px;
+            padding-top: 30px;
+            border-top: 4px double #2C5F7F;
+            font-size: 18px;
+            font-weight: 900;
         }
 
         .auth-links a {
-            color: #5d4e37;
+            color: #2C5F7F;
             text-decoration: none;
-            margin: 0 15px;
-            transition: all 0.3s;
-            font-weight: 700;
-            border-bottom: 2px solid transparent;
+            margin: 0 20px;
+            transition: all 0.2s;
+            font-weight: 900;
+            font-family: 'Bebas Neue', cursive;
+            letter-spacing: 2px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
         }
 
         .auth-links a:hover {
-            color: #2c1810;
-            border-bottom: 2px solid #2c1810;
+            color: #fff;
+            background: #2C5F7F;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+            transform: scale(1.1);
         }
 
         .rules {
-            margin: 30px 0;
-            padding: 25px;
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 6px;
+            margin: 35px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 100%);
+            border-radius: 20px;
             text-align: left;
-            border: 2px solid #8b6f47;
+            border: 5px solid #2C5F7F;
+            box-shadow: 
+                0 0 0 3px #E8D5B7,
+                inset 0 3px 6px rgba(255,255,255,0.5),
+                0 8px 16px rgba(0,0,0,0.2);
         }
 
         .rules h3 {
-            margin-bottom: 15px;
-            color: #2c1810;
-            font-size: 20px;
-            font-family: 'Special Elite', cursive;
+            margin-bottom: 20px;
+            color: #E74C3C;
+            font-size: 28px;
+            font-family: 'Bangers', cursive;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            text-shadow: 
+                2px 2px 0 rgba(231, 76, 60, 0.3),
+                -1px -1px 0 #fff;
         }
 
         .rules ul {
@@ -282,16 +358,38 @@
         }
 
         .rules li {
-            margin: 12px 0;
-            padding-left: 30px;
+            margin: 15px 0;
+            padding-left: 35px;
             position: relative;
-            font-size: 16px;
-            line-height: 1.6;
-        }
+            font-size: 17px;
+            body::after {
+                border-width: 4px;
+            }
 
-        .rules li::before {
-            content: '✦';
-            position: absolute;
+            .container {
+                padding: 35px 25px;
+            }
+
+            .logo-circle {
+                width: 150px;
+                height: 150px;
+            }
+
+            .logo h1 {
+                font-size: 48px;
+            }
+
+            .tagline {
+                font-size: 16px;
+            }
+
+            button {
+                font-size: 18px;
+                padding: 16px 35px;
+            }
+
+            .rules h3 {
+                font-size: 24
             left: 0;
             color: #8b6f47;
             font-weight: bold;
@@ -320,9 +418,9 @@
 </head>
 <body>
     <div class="container">
-        <!-- Logo rond - remplacez l'emoji par votre logo -->
-        <div class="logo-circle placeholder">
-            <!-- <img src="/path/to/your/logo.png" alt="Logo"> -->
+        <!-- Logo rond style années 90 -->
+        <div class="logo-circle">
+            <img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" onerror="this.parentElement.classList.add('placeholder'); this.style.display='none';">
         </div>
 
         <div class="logo">
@@ -331,13 +429,13 @@
                 <span class="vs">VS</span>
                 <span class="red">ROUGE</span>
             </h1>
-            <p class="tagline">Infiltration • Déduction • Élimination</p>
+            <p class="tagline">INFILTRATION • DÉDUCTION • ÉLIMINATION</p>
         </div>
 
         <div class="description">
-            <p><strong>🎯 Objectif :</strong> Découvrez qui sont les traîtres infiltrés dans votre équipe avant qu'il ne soit trop tard !</p>
-            <p><strong>👥 Joueurs :</strong> 4 minimum (8+ pour les traîtres)</p>
-            <p><strong>⏱️ Durée :</strong> De 20 minutes à 10 jours</p>
+            <p><strong>🎯 OBJECTIF :</strong> Découvrez qui sont les traîtres infiltrés dans votre équipe avant qu'il ne soit trop tard !</p>
+            <p><strong>👥 JOUEURS :</strong> 4 minimum (8+ pour les traîtres)</p>
+            <p><strong>⏱️ DURÉE :</strong> De 20 minutes à 10 jours</p>
         </div>
 
         <div class="buttons">
@@ -350,7 +448,7 @@
         </div>
 
         <div class="rules">
-            <h3>📋 Comment jouer ?</h3>
+            <h3>📋 COMMENT JOUER ?</h3>
             <ul>
                 <li><strong>Deux équipes :</strong> Bleus contre Rouges</li>
                 <li><strong>Traîtres cachés :</strong> Certains joueurs infiltrent l'équipe adverse</li>
@@ -361,9 +459,9 @@
         </div>
 
         <div class="auth-links">
-            <a href="/login.html">Connexion</a>
-            <span style="color: rgba(0,0,0,0.3)">|</span>
-            <a href="/register.html">Inscription</a>
+            <a href="/login.html">CONNEXION</a>
+            <span style="color: rgba(44,95,127,0.3); font-size: 24px;">|</span>
+            <a href="/register.html">INSCRIPTION</a>
         </div>
     </div>
 </body>
