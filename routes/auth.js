@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 // const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
 
@@ -12,8 +13,13 @@ const auth = async (req, res, next) => {
       throw new Error();
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_secret_jwt_temporaire');
-    const user = await User.findById(decoded.userId);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET non configuré');
+    }
+    
+    const decoded = jwt.verify(token, jwtSecret);
+    const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
       throw new Error();
@@ -27,9 +33,33 @@ const auth = async (req, res, next) => {
   }
 };
 
-// Inscription
-router.post('/register', async (req, res) => {
+// Inscription avec validation
+router.post('/register', [
+  body('username')
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Le pseudo doit contenir entre 3 et 30 caractères')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('Le pseudo ne peut contenir que des lettres, chiffres, tirets et underscores'),
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Email invalide'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Le mot de passe doit contenir au moins 6 caractères')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre')
+], async (req, res) => {
   try {
+    // Vérifier les erreurs de validation
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: errors.array()[0].msg 
+      });
+    }
+    
     const { username, email, password } = req.body;
     
     // Vérifier si l'utilisateur existe déjà
@@ -54,9 +84,14 @@ router.post('/register', async (req, res) => {
     // const emailSent = await sendVerificationEmail(user, verificationToken);
 
     // Créer le token JWT (l'utilisateur peut se connecter mais certaines fonctionnalités nécessitent la vérification)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET non configuré');
+    }
+    
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'votre_secret_jwt_temporaire',
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
@@ -72,16 +107,37 @@ router.post('/register', async (req, res) => {
       },
       token
     });
-  } catch (error) {
-    res.status(400).json({ error: 'Erreur lors de la création du compte: ' + error.message });
-  }
+  } catch (e avec validation
+router.post('/login', [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Email invalide'),
+  body('password')
+    .notEmpty()
+    .withMessage('Mot de passe requis')
+], async (req, res) => {
+  try {
+    // Vérifier les erreurs de validation
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: errors.array()[0].msg 
+      });
+    }
+    
 });
 
 // Connexion
 router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  try {jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET non configuré');
+    }
     
+    const token = jwt.sign(
+      { userId: user._id }, 
+      jwtSecret
     // Trouver l'utilisateur
     const user = await User.findOne({ email });
     if (!user) {

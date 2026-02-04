@@ -5,6 +5,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -14,8 +17,51 @@ const Game = require('./models/Game');
 const { endGame, cleanupOldGames } = require('./utils/gameCleanup');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Sécurité HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Désactivé pour Socket.io
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting global
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requêtes max par IP
+  message: 'Trop de requêtes depuis cette IP, réessayez plus tard',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// Rate limiting auth strict
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 tentatives de connexion/inscription par 15min
+  message: 'Trop de tentatives de connexion, réessayez dans 15 minutes',
+  skipSuccessfulRequests: true
+});
+
+// CORS sécurisé
+const allowedOrigins = [
+  'https://jeu-bleu-rouge.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Non autorisé par CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '10kb' })); // Limite la taille des requêtes
+app.use(mongoSanitize()); // Protection injection NoSQL
 
 // Forcer l'encodage UTF-8 pour toutes les réponses
 // Ajoute automatiquement charset=utf-8 aux types textuels sans écraser le type
@@ -38,8 +84,23 @@ app.use((req, res, next) => {
 // Variable globale pour vérifier la connexion MongoDB
 let mongoConnected = false;
 
+// Vérification du JWT_SECRET
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'votre_secret_jwt_super_securise_changez_moi') {
+  console.error('⚠️  ALERTE SÉCURITÉ: JWT_SECRET non défini ou valeur par défaut!');
+  console.error('   Définissez une clé secrète forte dans les variables d\'environnement');
+}
+
 // Connexion à MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_rouge')
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  console.error('❌ MONGODB_URI non défini dans les variables d\'environnement');
+  process.exit(1);
+}
+
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
 .then(() => {
   console.log('✅ Connecté à MongoDB');
   mongoConnected = true;
@@ -60,8 +121,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jeu_bleu_
   console.log('⚠️ L\'application fonctionnera sans authentification (parties temporaires uniquement)');
 });
 
-// Routes d'authentification
-app.use('/api/auth', authRouter);
+// Routes d'authentification (avec rate limiting)
+app.use('/api/auth', authLimiter, authRouter);
 
 // Routes de gestion des parties
 const gameRouter = require('./routes/game');
@@ -79,9 +140,12 @@ app.get('/', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Permet toutes les origines
-    methods: ["GET", "POST"]
-  }
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // ==========================
