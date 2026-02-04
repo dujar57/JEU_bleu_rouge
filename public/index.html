@@ -7,7 +7,7 @@
     <title>Bleu vs Rouge - Jeu d'infiltration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bungee&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Archivo+Black&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -16,7 +16,7 @@
         }
 
         body {
-            font-family: 'Arial Black', 'Impact', sans-serif;
+            font-family: 'Anton', 'Arial Black', sans-serif;
             background: #4FA8A8;
             background-image: 
                 repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
@@ -27,7 +27,7 @@
             align-items: center;
             color: #2C3E50;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
             padding: 20px;
         }
 
@@ -57,13 +57,22 @@
             top: 10px;
             left: 10px;
             right: 10px;
-            bottom: 10px#E8D5B7;
+            bottom: 10px;
+            border: 6px solid #2C5F7F;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(44, 95, 127, 0.2);
+        }
+
+        .container {
+            background: #E8D5B7;
             background-image: 
                 radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 50%);
             border-radius: 20px;
-            padding: 50px 40px;
-            max-width: 750px;
+            padding: 60px 50px;
+            max-width: 900px;
             width: 100%;
             box-shadow: 
                 0 0 0 8px #E8D5B7,
@@ -77,36 +86,14 @@
             position: relative;
             z-index: 2;
             color: #2C3E50;
+            margin: 0 auto;
         }
 
-        /* Motif décoratif années 90 */
-        .container::before {
-            content: '';
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 10px,
-                rgba(44, 95, 127, 0.1) 10px,
-                rgba(44, 95, 127, 0.1) 12px
-            );
-            pointer-events: none;
-            border-radius: 20px;
-            z-index: -1;
-            position: relative;
-            z-index: 1;
-            color: #2c1810;
-        }
-
-        /* Effet papier fro- Style années 90 */
+        /* Logo circulaire - Style années 90 */
         .logo-circle {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 35px;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 40px;
             border-radius: 50%;
             background: #E8D5B7;
             border: 8px solid #2C5F7F;
@@ -133,11 +120,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius:Bangers', cursive;
-            font-size: 68px;
+            border-radius: 50%;
+        }
+
+        .logo h1 {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 78px;
             font-weight: 900;
-            margin-bottom: 20px;
-            letter-spacing: 3px;
+            margin-bottom: 25px;
+            letter-spacing: 6px;
             line-height: 1;
             text-transform: uppercase;
         }
@@ -145,114 +136,112 @@
         .blue {
             color: #2C5F7F;
             text-shadow: 
-                4px 4px 0 rgba(44, 95, 127, 0.3),
+                5px 5px 0 rgba(44, 95, 127, 0.3),
                 -2px -2px 0 #fff;
             display: inline-block;
-            transform: rotate(-3deg);
+            transform: rotate(-2deg);
         }
 
         .vs {
             color: #E8D5B7;
-            font-size: 48px;
-            margin: 0 20px;
-            font-family: 'Bebas Neue', cursive;
+            font-size: 56px;
+            margin: 0 25px;
+            font-family: 'Anton', cursive;
             text-shadow: 
-                2px 2px 0 #2C5F7F,
-                4px 4px 0 #E74C3C;
+                3px 3px 0 #2C5F7F,
+                5px 5px 0 #E74C3C;
             display: inline-block;
-            transform: scale(1.2);
+            transform: scale(1.3);
         }
 
         .red {
             color: #E74C3C;
             text-shadow: 
-                4px 4px 0 rgba(231, 76, 60, 0.3),
+                5px 5px 0 rgba(231, 76, 60, 0.3),
                 -2px -2px 0 #fff;
             display: inline-block;
-            transform: rotate(3deg);
+            transform: rotate(2deg);
         }
 
         .tagline {
-            font-size: 20px;
+            font-size: 24px;
             color: #2C5F7F;
-            margin-bottom: 40px;
+            margin-bottom: 45px;
             font-weight: 900;
-            letter-spacing: 4px;
+            letter-spacing: 6px;
             text-transform: uppercase;
-            font-family: 'Bebas Neue', cursive;
+            font-family: 'Anton', sans-serif;
             text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
-            background: linear-gradient(90deg, #2C5F7F, #E74C3C, #2C5F7F);
-            -webkit-background-clip: text;
-            -webkit-te5px;
+        }
+
+        .description {
+            margin: 0 auto 45px;
+            padding: 30px;
             background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%);
             border: 4px dashed #2C5F7F;
             border-radius: 15px;
-            text-align: left;
-            font-size: 17px;
-            line-height: 1.9;
+            text-align: center;
+            font-size: 19px;
+            line-height: 2;
             box-shadow: 
                 inset 0 2px 4px rgba(255,255,255,0.5),
                 inset 0 -2px 4px rgba(0,0,0,0.1),
                 0 4px 8px rgba(0,0,0,0.2);
+            max-width: 100%;
         }
 
         .description p {
-            margin-bottom: 14px;
+            margin-bottom: 16px;
             font-weight: 600;
         }
 
         .description strong {
             color: #E74C3C;
             font-weight: 900;
-            font-size: 18px;
-            text-shadow: 1px 1px 0 rgba(255,255,255,0.5)
-
-        .red {
-            color: #dc2626;
-            text-shadow: 2px 2px 0 rgba(220, 38, 38, 0.3);
+            font-size: 20px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+            font-family: 'Archivo Black', sans-serif;
         }
 
-        .tagline {
-            font-size: 18px;
-            color: #5d4e37;
-            margin-bottom: 35px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-family: 'Courier Prime', monospace;
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin: 0 auto 45px;
+            max-width: 600px;
         }
 
-        .description {
-            margin-bottom: 40px;
-            padding: 20px 45px;
-            font-size: 22px;
+        button {
+            padding: 28px 60px;
+            font-size: 32px;
             font-weight: 900;
-            border: 5px solid #2C3E50;
+            border: 6px solid #2C3E50;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            font-family: 'Bangers', cursive;
+            font-family: 'Archivo Black', sans-serif;
             box-shadow: 
-                0 8px 0 #2C3E50,
-                0 12px 20px rgba(0,0,0,0.4);
+                0 10px 0 #2C3E50,
+                0 15px 25px rgba(0,0,0,0.4);
+            width: 100%;
         }
 
         button:hover {
-            transform: translateY(-3px) scale(1.02);
+            transform: translateY(-4px) scale(1.02);
             box-shadow: 
-                0 11px 0 #2C3E50,
-                0 15px 25px rgba(0,0,0,0.5);
+                0 14px 0 #2C3E50,
+                0 20px 30px rgba(0,0,0,0.5);
         }
 
         button:active {
-            transform: translateY(5px);
+            transform: translateY(6px);
             box-shadow: 
-                0 3px 0 #2C3E50,
-                0 6px 12px rgba(0,0,0,0.3);
+                0 4px 0 #2C3E50,
+                0 8px 15px rgba(0,0,0,0.3);
         }
 
         button span {
@@ -277,45 +266,27 @@
         }
 
         .btn-secondary:hover {
-            background: linear-gradient(180deg, #F1948A 0%, #E74C3C
-                0 4px 8px rgba(0,0,0,0.3);
+            background: linear-gradient(180deg, #F1948A 0%, #E74C3C 100%);
         }
 
-        button span {
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #fff;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: #fff;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }30px;
-            padding-top: 30px;
+        .auth-links {
+            margin-top: 35px;
+            padding-top: 35px;
             border-top: 4px double #2C5F7F;
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 900;
+            text-align: center;
         }
 
         .auth-links a {
             color: #2C5F7F;
             text-decoration: none;
-            margin: 0 20px;
+            margin: 0 25px;
             transition: all 0.2s;
             font-weight: 900;
-            font-family: 'Bebas Neue', cursive;
-            letter-spacing: 2px;
-            padding: 8px 16px;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 3px;
+            padding: 10px 20px;
             border-radius: 8px;
             text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
         }
@@ -324,94 +295,98 @@
             color: #fff;
             background: #2C5F7F;
             text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
 
         .rules {
-            margin: 35px 0;
-            padding: 30px;
+            margin: 40px auto;
+            padding: 35px;
             background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 100%);
             border-radius: 20px;
-            text-align: left;
+            text-align: center;
             border: 5px solid #2C5F7F;
             box-shadow: 
                 0 0 0 3px #E8D5B7,
                 inset 0 3px 6px rgba(255,255,255,0.5),
                 0 8px 16px rgba(0,0,0,0.2);
+            max-width: 100%;
         }
 
         .rules h3 {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             color: #E74C3C;
-            font-size: 28px;
-            font-family: 'Bangers', cursive;
+            font-size: 36px;
+            font-family: 'Archivo Black', sans-serif;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             text-shadow: 
-                2px 2px 0 rgba(231, 76, 60, 0.3),
+                3px 3px 0 rgba(231, 76, 60, 0.3),
                 -1px -1px 0 #fff;
         }
 
         .rules ul {
             list-style: none;
             padding-left: 0;
+            text-align: center;
         }
 
         .rules li {
-            margin: 15px 0;
-            padding-left: 35px;
+            margin: 18px auto;
+            padding-left: 0;
             position: relative;
-            font-size: 17px;
+            font-size: 19px;
+            line-height: 1.8;
+            font-weight: 700;
+            max-width: 600px;
+        }
+
+        .rules li strong {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 20px;
+        }
+
+        .rules li::before {
+            content: '★ ';
+            color: #E74C3C;
+            font-weight: bold;
+            font-size: 24px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+        }
+
+        @media (max-width: 768px) {
             body::after {
                 border-width: 4px;
             }
 
             .container {
-                padding: 35px 25px;
+                padding: 40px 30px;
             }
 
             .logo-circle {
-                width: 150px;
-                height: 150px;
+                width: 160px;
+                height: 160px;
             }
 
             .logo h1 {
-                font-size: 48px;
+                font-size: 52px;
             }
 
             .tagline {
-                font-size: 16px;
+                font-size: 18px;
             }
 
             button {
-                font-size: 18px;
-                padding: 16px 35px;
+                font-size: 24px;
+                padding: 22px 40px;
             }
 
             .rules h3 {
-                font-size: 24
-            left: 0;
-            color: #8b6f47;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 30px 25px;
+                font-size: 28px;
             }
-
-            .logo h1 {
-                font-size: 36px;
-            }
-
-            .tagline {
-                font-size: 14px;
-            }
-
-            button {
+            
+            .description {
                 font-size: 16px;
-                padding: 15px 30px;
+                padding: 20px;
             }
         }
     </style>
