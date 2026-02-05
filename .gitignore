@@ -33,7 +33,7 @@ logs/
 # ========================================
 # Build et cache
 # ========================================
-dist/
+# dist/ - ON GARDE POUR RENDER
 build/
 .cache/
 .parcel-cache/
