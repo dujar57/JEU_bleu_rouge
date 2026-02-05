@@ -28,19 +28,20 @@ export default function Register({ onBack, onRegisterSuccess }) {
       const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pseudo, email, password })
+        body: JSON.stringify({ username: pseudo, email, password })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        alert('✅ Inscription réussie ! Vérifiez votre email pour confirmer votre compte.');
+        alert('✅ Inscription réussie ! Vous pouvez maintenant vous connecter.');
         if (onRegisterSuccess) onRegisterSuccess(data);
         onBack();
       } else {
-        setError(data.message || 'Erreur lors de l\'inscription');
+        setError(data.error || data.message || 'Erreur lors de l\'inscription');
       }
     } catch (err) {
+      console.error('Erreur inscription:', err);
       setError('Erreur réseau - Veuillez réessayer');
     } finally {
       setLoading(false);

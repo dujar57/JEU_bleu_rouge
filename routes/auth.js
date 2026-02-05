@@ -74,13 +74,12 @@ router.post('/register', authLimiter, [
   body('password')
     .isLength({ min: 6, max: 128 })
     .withMessage('Le mot de passe doit contenir entre 6 et 128 caractères')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre')
 ], async (req, res) => {
   try {
     // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Erreurs de validation:', errors.array());
       return res.status(400).json({ 
         error: errors.array()[0].msg 
       });
