@@ -1,9 +1,11 @@
 // -*- coding: utf-8 -*-
 // @charset "UTF-8"
 import { useState } from 'react';
+import Login from './Login';
+import Register from './Register';
 
 function Home({ createGame, joinGame }) {
-  const [mode, setMode] = useState(''); // 'create' ou 'join'
+  const [mode, setMode] = useState(''); // 'create', 'join', 'login', ou 'register'
   const [pseudo, setPseudo] = useState('');
   const [realLifeInfo, setRealLifeInfo] = useState('');
   const [code, setCode] = useState('');
@@ -68,12 +70,20 @@ function Home({ createGame, joinGame }) {
         </div>
         
         <div className="auth-links">
-          <a href="/login.html">CONNEXION</a>
+          <button onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>CONNEXION</button>
           <span style={{ color: 'rgba(44,95,127,0.3)', fontSize: '24px' }}>|</span>
-          <a href="/register.html">INSCRIPTION</a>
+          <button onClick={() => setMode('register')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>INSCRIPTION</button>
         </div>
       </div>
     );
+  }
+
+  if (mode === 'login') {
+    return <Login onBack={() => setMode('')} />;
+  }
+
+  if (mode === 'register') {
+    return <Register onBack={() => setMode('')} />;
   }
 
   if (mode === 'create') {
