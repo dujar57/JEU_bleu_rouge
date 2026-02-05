@@ -44,10 +44,34 @@ function Home({ createGame, joinGame }) {
           </h1>
           <p className="tagline">INFILTRATION • DÉDUCTION • ÉLIMINATION</p>
         </div>
-        <button onClick={() => setMode('create')}>📝 Créer une partie</button>
+        
+        <div className="description">
+          <p><strong>🎯 OBJECTIF :</strong> Découvrez qui sont les traîtres infiltrés dans votre équipe avant qu'il ne soit trop tard !</p>
+          <p><strong>👥 JOUEURS :</strong> 4 minimum (8+ pour les traîtres)</p>
+          <p><strong>⏱️ DURÉE :</strong> De 20 minutes à 10 jours</p>
+        </div>
+
+        <button onClick={() => setMode('create')}>🎮 CRÉER UNE PARTIE</button>
         <button className="secondary" onClick={() => setMode('join')}>
-          🎯 Rejoindre une partie
+          🔗 REJOINDRE UNE PARTIE
         </button>
+        
+        <div className="rules">
+          <h3>📋 COMMENT JOUER ?</h3>
+          <ul>
+            <li><strong>Deux équipes :</strong> Bleus contre Rouges</li>
+            <li><strong>Traîtres cachés :</strong> Certains joueurs infiltrent l'équipe adverse</li>
+            <li><strong>Votes réguliers :</strong> Éliminez les suspects à chaque tour</li>
+            <li><strong>Chat anonyme :</strong> Discutez sans révéler votre identité</li>
+            <li><strong>Gagnez :</strong> Éliminez tous les adversaires ou démasquez les traîtres</li>
+          </ul>
+        </div>
+        
+        <div className="auth-links">
+          <a href="/login.html">CONNEXION</a>
+          <span style={{ color: 'rgba(44,95,127,0.3)', fontSize: '24px' }}>|</span>
+          <a href="/register.html">INSCRIPTION</a>
+        </div>
       </div>
     );
   }
