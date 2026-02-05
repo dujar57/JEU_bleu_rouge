@@ -35,20 +35,15 @@ function Home({ createGame, joinGame }) {
   if (mode === '') {
     return (
       <div className="container">
-        <h1>
-          <span className="blue">🔵 BLEU</span>
-          <span className="vs">vs</span>
-          <span className="red">ROUGE 🔴</span>
-        </h1>
-        <p style={{ 
-          marginBottom: '35px', 
-          fontSize: '16px', 
-          fontStyle: 'italic',
-          color: '#5d4e37',
-          fontFamily: 'Courier Prime, monospace'
-        }}>
-          Un jeu d'infiltration et de stratégie
-        </p>
+        <div className="logo-circle placeholder"></div>
+        <div className="logo">
+          <h1>
+            <span className="blue">BLEU</span>
+            <span className="vs">vs</span>
+            <span className="red">ROUGE</span>
+          </h1>
+        </div>
+        <p className="tagline">UN JEU D'INFILTRATION ET DE STRATÉGIE</p>
         <button onClick={() => setMode('create')}>📝 Créer une partie</button>
         <button className="secondary" onClick={() => setMode('join')}>
           🎯 Rejoindre une partie
