@@ -1,7 +1,48 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const { endGame } = require('../utils/gameCleanup');
-const { auth } = require('./auth');
+
+// Middleware pour vérifier le token (copié de auth.js)
+const auth = async (req, res, next) => {
+  try {
+    const authHeader = req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token manquant ou invalide' });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    if (token.length > 500) {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+    
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET non configuré!');
+      return res.status(500).json({ error: 'Erreur de configuration serveur' });
+    }
+    
+    const decoded = jwt.verify(token, jwtSecret);
+    const user = await User.findById(decoded.userId).select('-password -emailVerificationToken');
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    req.user = user;
+    req.token = token;
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expiré' });
+    }
+    res.status(401).json({ error: 'Authentification échouée' });
+  }
+};
 
 // Terminer une partie manuellement
 router.post('/end-game', auth, async (req, res) => {

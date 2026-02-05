@@ -8,25 +8,50 @@ function Home({ createGame, joinGame }) {
   const [realLifeInfo, setRealLifeInfo] = useState('');
   const [code, setCode] = useState('');
 
-  const handleCreateGame = () => {
+  const handleCreateGame = (e) => {
+    e.preventDefault();
+    console.log('🔵 handleCreateGame appelé', { pseudo, realLifeInfo });
     if (pseudo.trim() && realLifeInfo.trim()) {
+      console.log('✅ Validation OK, appel createGame');
       createGame(pseudo, realLifeInfo);
+    } else {
+      console.log('❌ Validation échouée');
+      alert('Veuillez remplir tous les champs');
     }
   };
 
-  const handleJoinGame = () => {
+  const handleJoinGame = (e) => {
+    e.preventDefault();
+    console.log('🔴 handleJoinGame appelé', { pseudo, realLifeInfo, code });
     if (pseudo.trim() && realLifeInfo.trim() && code.trim()) {
+      console.log('✅ Validation OK, appel joinGame');
       joinGame(code.toUpperCase(), pseudo, realLifeInfo);
+    } else {
+      console.log('❌ Validation échouée');
+      alert('Veuillez remplir tous les champs');
     }
   };
 
   if (mode === '') {
     return (
       <div className="container">
-        <h1>🔵 BLEU vs ROUGE 🔴</h1>
-        <button onClick={() => setMode('create')}>Créer une partie</button>
+        <h1>
+          <span className="blue">🔵 BLEU</span>
+          <span className="vs">vs</span>
+          <span className="red">ROUGE 🔴</span>
+        </h1>
+        <p style={{ 
+          marginBottom: '35px', 
+          fontSize: '16px', 
+          fontStyle: 'italic',
+          color: '#5d4e37',
+          fontFamily: 'Courier Prime, monospace'
+        }}>
+          Un jeu d'infiltration et de stratégie
+        </p>
+        <button onClick={() => setMode('create')}>📝 Créer une partie</button>
         <button className="secondary" onClick={() => setMode('join')}>
-          Rejoindre une partie
+          🎯 Rejoindre une partie
         </button>
       </div>
     );
@@ -35,7 +60,15 @@ function Home({ createGame, joinGame }) {
   if (mode === 'create') {
     return (
       <div className="container">
-        <h2>Créer une partie</h2>
+        <h2>📝 Créer une partie</h2>
+        <p style={{
+          marginBottom: '25px',
+          fontSize: '14px',
+          color: '#5d4e37',
+          fontStyle: 'italic'
+        }}>
+          Remplissez les informations ci-dessous
+        </p>
         <input
           type="text"
           placeholder="Votre pseudo"
@@ -48,9 +81,9 @@ function Home({ createGame, joinGame }) {
           value={realLifeInfo}
           onChange={(e) => setRealLifeInfo(e.target.value)}
         />
-        <button onClick={handleCreateGame}>Créer</button>
+        <button onClick={handleCreateGame}>✓ Créer</button>
         <button className="secondary" onClick={() => setMode('')}>
-          Retour
+          ← Retour
         </button>
       </div>
     );
@@ -59,13 +92,22 @@ function Home({ createGame, joinGame }) {
   if (mode === 'join') {
     return (
       <div className="container">
-        <h2>Rejoindre une partie</h2>
+        <h2>🎯 Rejoindre une partie</h2>
+        <p style={{
+          marginBottom: '25px',
+          fontSize: '14px',
+          color: '#5d4e37',
+          fontStyle: 'italic'
+        }}>
+          Entrez le code de la partie
+        </p>
         <input
           type="text"
-          placeholder="Code de la partie"
+          placeholder="Code de la partie (4 lettres)"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           maxLength={4}
+          style={{ textTransform: 'uppercase', textAlign: 'center', fontSize: '24px', letterSpacing: '8px' }}
         />
         <input
           type="text"
@@ -79,9 +121,9 @@ function Home({ createGame, joinGame }) {
           value={realLifeInfo}
           onChange={(e) => setRealLifeInfo(e.target.value)}
         />
-        <button onClick={handleJoinGame}>Rejoindre</button>
+        <button onClick={handleJoinGame}>✓ Rejoindre</button>
         <button className="secondary" onClick={() => setMode('')}>
-          Retour
+          ← Retour
         </button>
       </div>
     );

@@ -55,49 +55,47 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
         <>
           <div style={{
             marginTop: '25px',
-            padding: '25px',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%)',
-            borderRadius: '20px',
-            border: '4px dashed #2C5F7F',
-            boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 8px rgba(0,0,0,0.2)'
+            padding: '20px',
+            background: 'rgba(255,255,255,0.4)',
+            borderRadius: '8px',
+            border: '3px dashed #8b6f47',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
           }}>
             <h3 style={{ 
-              fontSize: '24px', 
-              marginBottom: '20px', 
+              fontSize: '20px', 
+              marginBottom: '18px', 
               textAlign: 'center',
-              color: '#E74C3C',
-              fontFamily: "'Archivo Black', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '3px',
-              textShadow: '2px 2px 0 rgba(231,76,60,0.3)'
-            }}>⏰ Durée de la partie</h3>
+              color: '#2c1810',
+              fontFamily: "'Special Elite', cursive",
+              letterSpacing: '2px'
+            }}>⏰ DURÉE DE LA PARTIE</h3>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '15px'
+              gap: '12px'
             }}>
               {durations.map((duration) => (
                 <button
                   key={duration.value}
                   onClick={() => setSelectedDuration(duration.value)}
                   style={{
-                    padding: '16px',
+                    padding: '14px',
                     background: selectedDuration === duration.value 
-                      ? 'linear-gradient(180deg, #5DADE2 0%, #2C5F7F 100%)'
-                      : 'linear-gradient(180deg, #E8D5B7 0%, rgba(232,213,183,0.7) 100%)',
+                      ? 'linear-gradient(180deg, #7c6a46 0%, #5d4e37 100%)'
+                      : 'linear-gradient(180deg, #d4a574 0%, #b8935d 100%)',
                     border: selectedDuration === duration.value
-                      ? '4px solid #2C5F7F'
-                      : '3px solid rgba(44,95,127,0.4)',
-                    borderRadius: '15px',
-                    color: selectedDuration === duration.value ? 'white' : '#2C3E50',
+                      ? '3px solid #2c1810'
+                      : '2px solid #8b6f47',
+                    borderRadius: '6px',
+                    color: selectedDuration === duration.value ? '#f4e4c1' : '#2c1810',
                     cursor: 'pointer',
-                    fontSize: '17px',
-                    fontWeight: selectedDuration === duration.value ? '900' : '700',
+                    fontSize: '15px',
+                    fontWeight: '700',
                     transition: 'all 0.3s ease',
                     textShadow: selectedDuration === duration.value ? '1px 1px 0 rgba(0,0,0,0.3)' : 'none',
                     boxShadow: selectedDuration === duration.value 
-                      ? '0 4px 0 #2C3E50, 0 6px 12px rgba(0,0,0,0.3)'
-                      : '0 2px 4px rgba(0,0,0,0.2)',
+                      ? '0 4px 0 #1a0f0a, 0 6px 10px rgba(0,0,0,0.3)'
+                      : '0 2px 0 #1a0f0a, 0 4px 6px rgba(0,0,0,0.2)',
                     transform: selectedDuration === duration.value ? 'translateY(-2px)' : 'none'
                   }}
                 >

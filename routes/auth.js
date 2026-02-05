@@ -3,51 +3,77 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const rateLimit = require('express-rate-limit');
 // const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
+
+// Rate limiting strict pour l'authentification
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 tentatives max
+  message: 'Trop de tentatives, réessayez dans 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
 
 // Middleware pour vérifier le token
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error();
+    const authHeader = req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token manquant ou invalide' });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    if (token.length > 500) { // Sécurité : limite la taille du token
+      return res.status(401).json({ error: 'Token invalide' });
     }
     
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET non configuré');
+      console.error('JWT_SECRET non configuré!');
+      return res.status(500).json({ error: 'Erreur de configuration serveur' });
     }
     
     const decoded = jwt.verify(token, jwtSecret);
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId).select('-password -emailVerificationToken');
     
     if (!user) {
-      throw new Error();
+      return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
     
     req.user = user;
     req.token = token;
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Veuillez vous authentifier' });
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expiré' });
+    }
+    res.status(401).json({ error: 'Authentification échouée' });
   }
 };
 
-// Inscription avec validation
-router.post('/register', [
+// Inscription avec validation stricte
+router.post('/register', authLimiter, [
   body('username')
     .trim()
     .isLength({ min: 3, max: 30 })
     .withMessage('Le pseudo doit contenir entre 3 et 30 caractères')
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('Le pseudo ne peut contenir que des lettres, chiffres, tirets et underscores'),
+    .withMessage('Le pseudo ne peut contenir que des lettres, chiffres, tirets et underscores')
+    .escape(), // Protection XSS
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Email invalide'),
+    .withMessage('Email invalide')
+    .isLength({ max: 254 })
+    .withMessage('Email trop long'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Le mot de passe doit contenir au moins 6 caractères')
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Le mot de passe doit contenir entre 6 et 128 caractères')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre')
 ], async (req, res) => {
@@ -83,7 +109,7 @@ router.post('/register', [
     // Envoyer l'email de vérification
     // const emailSent = await sendVerificationEmail(user, verificationToken);
 
-    // Créer le token JWT (l'utilisateur peut se connecter mais certaines fonctionnalités nécessitent la vérification)
+    // Créer le token JWT
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET non configuré');
@@ -96,7 +122,7 @@ router.post('/register', [
     );
 
     res.status(201).json({
-      message: 'Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.',
+      message: 'Compte créé avec succès!',
       user: {
         id: user._id,
         username: user.username,
@@ -107,8 +133,14 @@ router.post('/register', [
       },
       token
     });
-  } catch (e avec validation
-router.post('/login', [
+  } catch (error) {
+    console.error('Erreur inscription:', error);
+    res.status(500).json({ error: 'Erreur lors de la création du compte' });
+  }
+});
+
+// Connexion avec validation
+router.post('/login', authLimiter, [
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -126,18 +158,8 @@ router.post('/login', [
       });
     }
     
-});
-
-// Connexion
-router.post('/login', async (req, res) => {
-  try {jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET non configuré');
-    }
+    const { email, password } = req.body;
     
-    const token = jwt.sign(
-      { userId: user._id }, 
-      jwtSecret
     // Trouver l'utilisateur
     const user = await User.findOne({ email });
     if (!user) {
@@ -151,9 +173,14 @@ router.post('/login', async (req, res) => {
     }
     
     // Créer le token
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET non configuré');
+    }
+    
     const token = jwt.sign(
       { userId: user._id }, 
-      process.env.JWT_SECRET || 'votre_secret_jwt_temporaire',
+      jwtSecret,
       { expiresIn: '7d' }
     );
     
@@ -169,22 +196,28 @@ router.post('/login', async (req, res) => {
       token
     });
   } catch (error) {
-    res.status(400).json({ error: 'Erreur lors de la connexion: ' + error.message });
+    console.error('Erreur connexion:', error);
+    res.status(500).json({ error: 'Erreur lors de la connexion' });
   }
 });
 
 // Obtenir le profil de l'utilisateur
 router.get('/profile', auth, async (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
-      gamesPlayed: req.user.gamesPlayed,
-      gamesWon: req.user.gamesWon,
-      createdAt: req.user.createdAt
-    }
-  });
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        username: req.user.username,
+        email: req.user.email,
+        emailVerified: req.user.emailVerified,
+        gamesPlayed: req.user.gamesPlayed,
+        gamesWon: req.user.gamesWon,
+        createdAt: req.user.createdAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération du profil' });
+  }
 });
 
 // Déconnexion
@@ -220,14 +253,15 @@ router.get('/verify-email', async (req, res) => {
     await user.save();
     
     // Envoyer l'email de bienvenue
-    await sendWelcomeEmail(user);
+    // await sendWelcomeEmail(user);
     
     res.json({ 
       message: 'Email vérifié avec succès ! Vous pouvez maintenant vous connecter.',
       success: true
     });
   } catch (error) {
-    res.status(500).json({ error: 'Erreur lors de la vérification de l\'email: ' + error.message });
+    console.error('Erreur vérification email:', error);
+    res.status(500).json({ error: 'Erreur lors de la vérification de l\'email' });
   }
 });
 
@@ -249,11 +283,10 @@ router.post('/resend-verification', auth, async (req, res) => {
     // Envoyer l'email
     // const emailSent = await sendVerificationEmail(user, verificationToken);
     
-    // if (!emailSent) { console.warn('Email skipped'); }
-    
     res.json({ message: 'Email de vérification renvoyé avec succès' });
   } catch (error) {
-    res.status(500).json({ error: 'Erreur lors du renvoi de l\'email: ' + error.message });
+    console.error('Erreur renvoi email:', error);
+    res.status(500).json({ error: 'Erreur lors du renvoi de l\'email' });
   }
 });
 

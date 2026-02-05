@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Socket.io</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        #logs {
+            background: #000;
+            padding: 10px;
+            border: 1px solid #0f0;
+            height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+        .log-error { color: #f00; }
+        .log-success { color: #0f0; }
+        .log-info { color: #0ff; }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0a0;
+        }
+        input {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Test de connexion Socket.io</h1>
+    <div>
+        <strong>Status:</strong> <span id="status">❌ Déconnecté</span>
+    </div>
+    <div>
+        <strong>Socket ID:</strong> <span id="socketId">-</span>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <input type="text" id="pseudo" placeholder="Pseudo" value="TestUser">
+        <input type="text" id="realLifeInfo" placeholder="Classe" value="Terminale 1">
+        <input type="text" id="gameCode" placeholder="Code partie" value="">
+        <br>
+        <button onclick="createGame()">📝 Créer une partie</button>
+        <button onclick="joinGame()">🎯 Rejoindre une partie</button>
+        <button onclick="clearLogs()">🧹 Clear</button>
+    </div>
+
+    <div id="logs"></div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const statusSpan = document.getElementById('status');
+        const socketIdSpan = document.getElementById('socketId');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+        }
+
+        log('🚀 Initialisation...', 'info');
+        
+        const socket = io('https://jeu-bleu-rouge.onrender.com', {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 5
+        });
+
+        // Debug: log tous les événements
+        socket.onAny((event, ...args) => {
+            log(`📡 Événement reçu: ${event}`, 'info');
+            log(`   Données: ${JSON.stringify(args)}`, 'info');
+        });
+
+        socket.on('connect', () => {
+            log('✅ Connecté au serveur !', 'success');
+            log(`   Socket ID: ${socket.id}`, 'success');
+            statusSpan.textContent = '✅ Connecté';
+            statusSpan.style.color = '#0f0';
+            socketIdSpan.textContent = socket.id;
+        });
+
+        socket.on('disconnect', (reason) => {
+            log(`❌ Déconnecté: ${reason}`, 'error');
+            statusSpan.textContent = '❌ Déconnecté';
+            statusSpan.style.color = '#f00';
+            socketIdSpan.textContent = '-';
+        });
+
+        socket.on('connect_error', (error) => {
+            log(`❌ Erreur de connexion: ${error.message}`, 'error');
+        });
+
+        socket.on('game_created', (data) => {
+            log(`🎮 Partie créée ! Code: ${data.gameCode}`, 'success');
+            document.getElementById('gameCode').value = data.gameCode;
+        });
+
+        socket.on('game_joined', (data) => {
+            log(`🎮 Partie rejointe ! Code: ${data.gameCode}`, 'success');
+        });
+
+        socket.on('update_room', (data) => {
+            log(`📊 Mise à jour de la salle`, 'info');
+            log(`   Joueurs: ${data.players.length}`, 'info');
+        });
+
+        socket.on('error', (data) => {
+            log(`⚠️ Erreur: ${data.message}`, 'error');
+        });
+
+        function createGame() {
+            const pseudo = document.getElementById('pseudo').value;
+            const realLifeInfo = document.getElementById('realLifeInfo').value;
+            
+            log(`🔵 Envoi de create_game...`, 'info');
+            log(`   Pseudo: ${pseudo}`, 'info');
+            log(`   Classe: ${realLifeInfo}`, 'info');
+            
+            socket.emit('create_game', { pseudo, realLifeInfo });
+        }
+
+        function joinGame() {
+            const pseudo = document.getElementById('pseudo').value;
+            const realLifeInfo = document.getElementById('realLifeInfo').value;
+            const gameCode = document.getElementById('gameCode').value;
+            
+            if (!gameCode) {
+                log('❌ Veuillez entrer un code de partie', 'error');
+                return;
+            }
+            
+            log(`🔴 Envoi de join_game...`, 'info');
+            log(`   Pseudo: ${pseudo}`, 'info');
+            log(`   Classe: ${realLifeInfo}`, 'info');
+            log(`   Code: ${gameCode}`, 'info');
+            
+            socket.emit('join_game', { gameCode, pseudo, realLifeInfo });
+        }
+
+        log('✨ Test Socket.io prêt !', 'success');
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 # Script de déploiement automatique vers Render
 
 Write-Host "`n🚀 Déploiement vers Render - Jeu Bleu vs Rouge" -ForegroundColor Cyan
-Write-Host "=" * 60 -ForegroundColor Gray
+Write-Host ("=" * 60) -ForegroundColor Gray
 
 # Vérifier si Git est installé
 try {
@@ -66,4 +66,4 @@ try {
 }
 
 Write-Host "`n✨ Déploiement terminé !" -ForegroundColor Green
-Write-Host "=" * 60 -ForegroundColor Gray
+Write-Host ("=" * 60) -ForegroundColor Gray

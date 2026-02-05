@@ -15,6 +15,15 @@ const authRouter = require('./routes/auth');
 const User = require('./models/User');
 const Game = require('./models/Game');
 const { endGame, cleanupOldGames } = require('./utils/gameCleanup');
+const {
+  validatePseudo,
+  validateGameCode,
+  validateRealLifeInfo,
+  validateChatMessage,
+  validateDuration,
+  validatePlayerId,
+  checkRateLimit
+} = require('./utils/socketValidation');
 
 const app = express();
 
@@ -42,11 +51,9 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
-// CORS sécurisé
+// CORS sécurisé - RENDER UNIQUEMENT
 const allowedOrigins = [
-  'https://jeu-bleu-rouge.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:3000'
+  'https://jeu-bleu-rouge.onrender.com'
 ];
 
 app.use(cors({
@@ -97,10 +104,8 @@ if (!mongoUri) {
   process.exit(1);
 }
 
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// Options de connexion MongoDB modernes (sans les options obsolètes)
+mongoose.connect(mongoUri)
 .then(() => {
   console.log('✅ Connecté à MongoDB');
   mongoConnected = true;
@@ -128,12 +133,20 @@ app.use('/api/auth', authLimiter, authRouter);
 const gameRouter = require('./routes/game');
 app.use('/api/game', gameRouter);
 
-// Servir les fichiers statiques depuis le dossier "public"
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir les fichiers statiques du client React (build de production)
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
-// Rediriger la racine vers la page de chargement si le serveur vient de démarrer
+// Servir les anciens fichiers statiques depuis le dossier "public"
+app.use('/old', express.static(path.join(__dirname, 'public')));
+
+// Rediriger la racine vers l'application React
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'client', 'dist', 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.send('⚠️ Application non construite. Exécutez: npm run build');
+  }
 });
 
 // Serveur HTTP (HTTPS géré automatiquement par la plateforme de déploiement)
@@ -649,10 +662,27 @@ io.on('connection', (socket) => {
   // ==========================
   socket.on('create_game', async (data) => {
     console.log('📥 Reçu demande de création de partie:', data);
+    
+    // Rate limiting
+    const rateCheck = checkRateLimit(socket.id, 'create_game', 3, 60000);
+    if (!rateCheck.allowed) {
+      socket.emit('error', { message: rateCheck.error });
+      return;
+    }
+    
     const { pseudo, realLifeInfo, userId } = data;
     
-    if (!pseudo) {
-      socket.emit('error', { message: 'Le pseudo est requis.' });
+    // Validation du pseudo
+    const pseudoValidation = validatePseudo(pseudo);
+    if (!pseudoValidation.valid) {
+      socket.emit('error', { message: pseudoValidation.error });
+      return;
+    }
+    
+    // Validation des infos
+    const infoValidation = validateRealLifeInfo(realLifeInfo);
+    if (!infoValidation.valid) {
+      socket.emit('error', { message: infoValidation.error });
       return;
     }
     
@@ -674,8 +704,8 @@ io.on('connection', (socket) => {
       players: [
         {
           socketId: socket.id,
-          pseudo: pseudo,
-          realLifeInfo: realLifeInfo,
+          pseudo: pseudoValidation.value, // Utiliser la valeur nettoyée
+          realLifeInfo: infoValidation.value, // Utiliser la valeur nettoyée
           team: null,
           role: null,
           isAlive: true,
@@ -691,11 +721,11 @@ io.on('connection', (socket) => {
         const gameDoc = new Game({
           gameId: gameCode,
           userId: userId,
-          playerName: pseudo,
+          playerName: pseudoValidation.value, // Utiliser la valeur nettoyée
           status: 'waiting',
           players: [{
             socketId: socket.id,
-            name: pseudo,
+            name: pseudoValidation.value, // Utiliser la valeur nettoyée
             team: null,
             joinedAt: new Date()
           }],
@@ -709,7 +739,7 @@ io.on('connection', (socket) => {
     }
 
     socket.join(gameCode);
-    console.log(`🎮 Partie créée : ${gameCode} par ${pseudo}`);
+    console.log(`🎮 Partie créée : ${gameCode} par ${pseudoValidation.value}`);
 
     socket.emit('game_created', { gameCode });
     updateRoom(gameCode);
@@ -719,9 +749,37 @@ io.on('connection', (socket) => {
   // EVENT: REJOINDRE UNE PARTIE
   // ==========================
   socket.on('join_game', (data) => {
+    // Rate limiting
+    const rateCheck = checkRateLimit(socket.id, 'join_game', 5, 60000);
+    if (!rateCheck.allowed) {
+      socket.emit('error', { message: rateCheck.error });
+      return;
+    }
+    
     const { gameCode, pseudo, realLifeInfo } = data;
+    
+    // Validation du code de partie
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) {
+      socket.emit('error', { message: codeValidation.error });
+      return;
+    }
+    
+    // Validation du pseudo
+    const pseudoValidation = validatePseudo(pseudo);
+    if (!pseudoValidation.valid) {
+      socket.emit('error', { message: pseudoValidation.error });
+      return;
+    }
+    
+    // Validation des infos
+    const infoValidation = validateRealLifeInfo(realLifeInfo);
+    if (!infoValidation.valid) {
+      socket.emit('error', { message: infoValidation.error });
+      return;
+    }
 
-    const game = games[gameCode];
+    const game = games[codeValidation.value];
 
     if (!game) {
       socket.emit('error', { message: 'Cette partie n\'existe pas.' });
@@ -733,18 +791,24 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Vérifie si le pseudo existe déjà
-    const pseudoExists = game.players.some(p => p.pseudo === pseudo);
+    // Vérifie si le pseudo existe déjà (insensible à la casse)
+    const pseudoExists = game.players.some(p => p.pseudo.toLowerCase() === pseudoValidation.value.toLowerCase());
     if (pseudoExists) {
-      socket.emit('error', { message: 'Ce pseudo est déjà pris.' });
+      socket.emit('error', { message: 'Ce pseudo est déjà pris dans cette partie.' });
+      return;
+    }
+    
+    // Limite le nombre de joueurs
+    if (game.players.length >= 50) {
+      socket.emit('error', { message: 'Cette partie est complète (max 50 joueurs).' });
       return;
     }
 
     // Ajoute le joueur
     game.players.push({
       socketId: socket.id,
-      pseudo: pseudo,
-      realLifeInfo: realLifeInfo,
+      pseudo: pseudoValidation.value, // Valeur nettoyée
+      realLifeInfo: infoValidation.value, // Valeur nettoyée
       team: null,
       role: null,
       isAlive: true,
@@ -752,10 +816,10 @@ io.on('connection', (socket) => {
       munitions: 0
     });
 
-    socket.join(gameCode);
-    console.log(`👥 ${pseudo} a rejoint la partie ${gameCode}`);
+    socket.join(codeValidation.value);
+    console.log(`👥 ${pseudoValidation.value} a rejoint la partie ${codeValidation.value}`);
 
-    socket.emit('game_joined', { gameCode });
+    socket.emit('game_joined', { gameCode: codeValidation.value });
     
     // Envoyer l'historique des messages au nouveau joueur
     if (game.chatMessages && game.chatMessages.length > 0) {
@@ -776,11 +840,39 @@ io.on('connection', (socket) => {
   // EVENT: LANCER LA PARTIE
   // ==========================
   socket.on('start_game', async (data) => {
+    // Rate limiting
+    const rateCheck = checkRateLimit(socket.id, 'start_game', 3, 60000);
+    if (!rateCheck.allowed) {
+      socket.emit('error', { message: rateCheck.error });
+      return;
+    }
+    
     const { gameCode, duration } = data;
-    const game = games[gameCode];
+    
+    // Validation du code
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) {
+      socket.emit('error', { message: codeValidation.error });
+      return;
+    }
+    
+    // Validation de la durée
+    const durationValidation = validateDuration(duration);
+    if (!durationValidation.valid) {
+      socket.emit('error', { message: durationValidation.error });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
 
     if (!game) {
       socket.emit('error', { message: 'Partie introuvable.' });
+      return;
+    }
+    
+    // Vérifier que c'est bien l'hôte qui démarre
+    if (game.players[0].socketId !== socket.id) {
+      socket.emit('error', { message: 'Seul l\'hôte peut démarrer la partie.' });
       return;
     }
 
@@ -946,22 +1038,41 @@ io.on('connection', (socket) => {
   // EVENT: MESSAGE CHAT
   // ==========================
   socket.on('chat_message', async (data) => {
+    // Rate limiting strict pour le chat
+    const rateCheck = checkRateLimit(socket.id, 'chat_message', 20, 60000);
+    if (!rateCheck.allowed) {
+      socket.emit('error', { message: 'Trop de messages, ralentissez !' });
+      return;
+    }
+    
     const { gameCode, message } = data;
-    const game = games[gameCode];
+    
+    // Validation du code
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) return;
+    
+    // Validation du message
+    const messageValidation = validateChatMessage(message);
+    if (!messageValidation.valid) {
+      socket.emit('error', { message: messageValidation.error });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
 
     if (!game) return;
     
     // Trouver le joueur qui envoie le message
     const player = game.players.find(p => p.socketId === socket.id);
-    if (!player || !player.isAlive) return;
-
-    // Message trop long ou vide
-    if (!message || message.trim().length === 0 || message.length > 200) return;
+    if (!player || !player.isAlive) {
+      socket.emit('error', { message: 'Vous ne pouvez pas envoyer de messages.' });
+      return;
+    }
 
     const chatMessage = {
       playerNumber: player.anonymousNumber,
       playerPseudo: player.pseudo,
-      message: message.trim(),
+      message: messageValidation.value, // Message nettoyé
       timestamp: Date.now()
     };
 
@@ -972,7 +1083,7 @@ io.on('connection', (socket) => {
     if (game.userId && mongoConnected) {
       try {
         await Game.findOneAndUpdate(
-          { gameId: gameCode },
+          { gameId: codeValidation.value },
           { 
             $push: { 
               chatMessages: {
@@ -1005,8 +1116,30 @@ io.on('connection', (socket) => {
   // EVENT: VOTER
   // ==========================
   socket.on('cast_vote', (data) => {
+    // Rate limiting pour les votes
+    const rateCheck = checkRateLimit(socket.id, 'cast_vote', 10, 60000);
+    if (!rateCheck.allowed) {
+      socket.emit('error', { message: rateCheck.error });
+      return;
+    }
+    
     const { gameCode, targetSocketId } = data;
-    const game = games[gameCode];
+    
+    // Validation du code
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) {
+      socket.emit('error', { message: codeValidation.error });
+      return;
+    }
+    
+    // Validation de l'ID cible
+    const targetValidation = validatePlayerId(targetSocketId);
+    if (!targetValidation.valid) {
+      socket.emit('error', { message: 'Cible invalide.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
 
     if (!game || game.votingPhase !== 'VOTING') {
       socket.emit('error', { message: 'Le vote n\'est pas disponible actuellement.' });
@@ -1020,10 +1153,16 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Vérifier que la cible existe
-    const target = game.players.find(p => p.socketId === targetSocketId);
+    // Vérifier que la cible existe et est vivante
+    const target = game.players.find(p => p.socketId === targetValidation.value);
     if (!target || !target.isAlive) {
       socket.emit('error', { message: 'Ce joueur n\'est pas disponible.' });
+      return;
+    }
+    
+    // Empêcher le vote pour soi-même
+    if (voter.socketId === target.socketId) {
+      socket.emit('error', { message: 'Vous ne pouvez pas voter pour vous-même.' });
       return;
     }
 
