@@ -341,34 +341,38 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         </div>
       )}
 
-      <h2>Joueurs en vie ({gameData.players.filter(p => p.isAlive).length})</h2>
-      
-      <div style={{ 
-        fontSize: '11px', 
-        color: '#888', 
-        marginBottom: '10px', 
+      {/* Compteur de joueurs en vie */}
+      <div style={{
+        marginBottom: '20px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '10px',
         textAlign: 'center',
-        padding: '5px',
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: '5px'
+        color: 'white'
       }}>
-        💡 Tous les joueurs sont anonymes - Seul le numéro est visible
+        <h3 style={{ color: 'white', marginBottom: '5px', fontSize: '24px' }}>
+          👥 Joueurs en vie
+        </h3>
+        <div style={{ fontSize: '36px', fontWeight: 'bold' }}>
+          {gameData.players.filter(p => p.isAlive).length}
+        </div>
       </div>
 
-      <div className="players-list">
-        {gameData.players.map((player, index) => (
-          player.isAlive && (
-            <div key={index} className={`player-item ${player.team || ''}`}>
-              <div>
-                <div className="player-name">
-                  Joueur {player.anonymousNumber || index + 1} {player.pseudo === pseudo && '(Vous)'}
-                </div>
-                <div className="player-info">{player.realLifeInfo}</div>
-              </div>
-            </div>
-          )
-        ))}
-      </div>
+      {/* Bilan des morts */}
+      {gameData.players.some(p => !p.isAlive) && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: '10px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '18px', marginBottom: '10px' }}>💀 Joueurs éliminés</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff6b6b' }}>
+            {gameData.players.filter(p => !p.isAlive).length}
+          </div>
+        </div>
+      )}
 
       {!votingPhase && !eliminationMessage && (
         <div style={{ textAlign: 'center', color: '#999', marginTop: '20px', fontSize: '14px' }}>
