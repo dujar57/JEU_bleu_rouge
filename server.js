@@ -583,11 +583,16 @@ function checkVictoryConditions(game) {
 
 // Calcule les phases de jeu en fonction de la durée et du nombre de joueurs
 function calculateGamePhases(duration, playerCount) {
-  // Calcul du nombre de votes basé sur la durée
-  // Règle : 2 votes par jour (24h)
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  const votesPerDay = 2;
-  const numberOfVotes = Math.max(3, Math.floor((duration / oneDayMs) * votesPerDay));
+  // Calcul du nombre de votes basé sur la durée ET le nombre de joueurs
+  // Règle : Plus il y a de joueurs, plus il y a de votes pour l'équilibrage
+  // Base : 1 vote par tranche de 3 joueurs, minimum 3 votes
+  const votesPerThreePlayers = Math.floor(playerCount / 3);
+  const baseDurationVotes = Math.max(3, Math.floor((duration / (24 * 60 * 60 * 1000)) * 2));
+  
+  // On prend le plus grand des deux pour garantir assez de votes
+  const numberOfVotes = Math.max(3, Math.max(votesPerThreePlayers, baseDurationVotes));
+  
+  console.log(`📊 Calcul des votes : ${playerCount} joueurs → ${votesPerThreePlayers} votes base, durée → ${baseDurationVotes} votes → TOTAL: ${numberOfVotes} votes`);
   
   // Durée entre chaque vote
   const voteInterval = Math.floor(duration / (numberOfVotes + 1));

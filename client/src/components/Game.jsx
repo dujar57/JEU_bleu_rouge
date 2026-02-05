@@ -468,21 +468,27 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         style={{
           position: 'fixed',
           bottom: '20px',
-          right: '20px',
-          width: '60px',
-          height: '60px',
+          left: '20px',
+          width: '70px',
+          height: '70px',
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          border: 'none',
+          border: '4px solid #E8D5B7',
           color: 'white',
-          fontSize: '24px',
+          fontSize: '28px',
           cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-          zIndex: 1000,
-          transition: 'transform 0.3s ease'
+          boxShadow: '0 0 0 4px #2C5F7F, 0 8px 25px rgba(0,0,0,0.4)',
+          zIndex: 1001,
+          transition: 'all 0.3s ease'
         }}
-        onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
-        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'scale(1.15)';
+          e.target.style.boxShadow = '0 0 0 4px #2C5F7F, 0 12px 35px rgba(102,126,234,0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.boxShadow = '0 0 0 4px #2C5F7F, 0 8px 25px rgba(0,0,0,0.4)';
+        }}
       >
         💬
         {messages.length > 0 && (
@@ -509,14 +515,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       {showChat && (
         <div style={{
           position: 'fixed',
-          bottom: '90px',
-          right: '20px',
-          width: '350px',
+          bottom: '100px',
+          left: '20px',
+          width: '380px',
           maxWidth: 'calc(100vw - 40px)',
-          height: '500px',
-          background: 'white',
+          height: '520px',
+          background: '#E8D5B7',
+          border: '6px solid #2C5F7F',
           borderRadius: '15px',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+          boxShadow: '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 999,
