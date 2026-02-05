@@ -32,6 +32,15 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
 
   return (
     <div className="container">
+      <div className="logo-circle placeholder"></div>
+      <div className="logo">
+        <h1>
+          <span className="blue">BLEU</span>
+          <span className="vs">VS</span>
+          <span className="red">ROUGE</span>
+        </h1>
+      </div>
+      
       <div className="game-code">
         <h3>Code de la partie</h3>
         <div className="code">{gameCode}</div>

@@ -143,6 +143,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
 
   return (
     <div className="container">
+      <div className="logo-circle placeholder"></div>
+      <div className="logo">
+        <h1 style={{ fontSize: '48px', marginBottom: '15px' }}>
+          <span className="blue">BLEU</span>
+          <span className="vs">VS</span>
+          <span className="red">ROUGE</span>
+        </h1>
+      </div>
+      
       {timeRemaining !== null && (
         <div style={{
           marginBottom: '20px',
