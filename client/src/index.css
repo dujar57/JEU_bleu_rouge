@@ -1,5 +1,5 @@
 @charset "UTF-8";
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&family=Anton&family=Bebas+Neue&family=Archivo+Black&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Archivo+Black&display=swap');
 
 * {
   margin: 0;
@@ -8,22 +8,22 @@
 }
 
 body {
-  font-family: 'Courier Prime', 'Courier New', monospace;
-  background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 100%);
+  font-family: 'Anton', 'Arial Black', sans-serif;
+  background: #4FA8A8;
   background-image: 
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.2) 2px, rgba(0,0,0,.2) 4px),
-    linear-gradient(135deg, #3d2817 0%, #1a0f0a 100%);
+    repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
+    repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(0,0,0,.03) 35px, rgba(0,0,0,.03) 70px);
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #f4e4c1;
+  color: #2C3E50;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
   padding: 20px;
 }
 
-/* Effet papier ancien */
+/* Effet scanlines rétro */
 body::before {
   content: '';
   position: fixed;
@@ -31,118 +31,132 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
   pointer-events: none;
-  opacity: 0.3;
-  z-index: 0;
+  z-index: 1;
 }
 
-/* Vignette vintage */
+/* Bordure décorative années 90 */
 body::after {
   content: '';
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  box-shadow: inset 0 0 200px rgba(0,0,0,0.8);
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 6px solid #2C5F7F;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
+  border-radius: 10px;
+  box-shadow: inset 0 0 20px rgba(44, 95, 127, 0.2);
 }
 
 #root {
   width: 100%;
-  max-width: 650px;
+  max-width: 900px;
   padding: 20px;
   position: relative;
   z-index: 2;
 }
 
-/* Logo circulaire */
+/* Logo circulaire - Style années 90 */
 .logo-circle {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 30px;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b6f47 0%, #6b5638 100%);
-  border: 4px solid #2c1810;
+  background: #E8D5B7;
+  border: 8px solid #2C5F7F;
   box-shadow: 
-    0 8px 16px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(255,255,255,0.2);
+    0 0 0 4px #E8D5B7,
+    0 0 0 8px #4FA8A8,
+    0 15px 30px rgba(0,0,0,0.4),
+    inset 0 3px 8px rgba(255,255,255,0.4),
+    inset 0 -3px 8px rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  animation: floatLogo 3s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
 }
 
 .logo-circle.placeholder::before {
   content: '🎭';
-  font-size: 60px;
+  font-size: 80px;
 }
 
 .logo {
+  text-align: center;
   margin-bottom: 20px;
 }
 
 .container {
-  background: linear-gradient(135deg, #f4e4c1 0%, #e8d5b7 100%);
-  border-radius: 8px;
-  padding: 50px 40px;
+  background: #E8D5B7;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 50%);
+  border-radius: 20px;
+  padding: 60px 50px;
   width: 100%;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(255,255,255,0.3),
-    0 0 0 1px rgba(0,0,0,0.3);
-  border: 3px solid #8b6f47;
+    0 0 0 8px #E8D5B7,
+    0 0 0 12px #2C5F7F,
+    0 0 0 16px #E8D5B7,
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    inset 0 5px 15px rgba(255,255,255,0.4),
+    inset 0 -5px 15px rgba(0,0,0,0.2);
+  border: 4px solid #2C5F7F;
   text-align: center;
   position: relative;
-  z-index: 1;
-  color: #2c1810;
-}
-
-/* Effet papier froissé */
-.container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
-  pointer-events: none;
-  border-radius: 8px;
+  z-index: 2;
+  color: #2C3E50;
 }
 
 h1 {
-  font-family: 'Special Elite', cursive;
-  font-size: 46px;
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 78px;
   font-weight: 900;
-  margin-bottom: 15px;
-  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
-  letter-spacing: 4px;
-  color: #2c1810;
+  margin-bottom: 25px;
+  letter-spacing: 6px;
+  line-height: 1;
+  text-transform: uppercase;
   text-align: center;
 }
 
 .tagline {
-  font-size: 18px;
-  color: #5d4e37;
-  margin-bottom: 35px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  font-size: 24px;
+  color: #2C5F7F;
+  margin-bottom: 45px;
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 6px;
   text-transform: uppercase;
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Anton', sans-serif;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
 }
 
 h2 {
-  font-family: 'Special Elite', cursive;
-  color: #2c1810;
+  font-family: 'Archivo Black', sans-serif;
+  color: #2C3E50;
   margin-bottom: 25px;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 4px;
   text-align: center;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
 }
 
 h3 {
@@ -152,22 +166,35 @@ h3 {
   color: #2c1810;
 }
 
-/* Styles pour les titres colorés */
+/* Styles pour les titres colorés - Style années 90 */
 .blue {
-  color: #2563eb;
-  text-shadow: 2px 2px 0 rgba(37, 99, 235, 0.3);
+  color: #2C5F7F;
+  text-shadow: 
+    5px 5px 0 rgba(44, 95, 127, 0.3),
+    -2px -2px 0 #fff;
+  display: inline-block;
+  transform: rotate(-2deg);
 }
 
 .vs {
-  color: #7c6a46;
-  font-size: 36px;
-  margin: 0 15px;
-  font-style: italic;
+  color: #E8D5B7;
+  font-size: 56px;
+  margin: 0 25px;
+  font-family: 'Anton', cursive;
+  text-shadow: 
+    3px 3px 0 #2C5F7F,
+    5px 5px 0 #E74C3C;
+  display: inline-block;
+  transform: scale(1.3);
 }
 
 .red {
-  color: #dc2626;
-  text-shadow: 2px 2px 0 rgba(220, 38, 38, 0.3);
+  color: #E74C3C;
+  text-shadow: 
+    5px 5px 0 rgba(231, 76, 60, 0.3),
+    -2px -2px 0 #fff;
+  display: inline-block;
+  transform: rotate(2deg);
 }
 
 input {

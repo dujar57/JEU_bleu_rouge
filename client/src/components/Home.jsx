@@ -39,11 +39,11 @@ function Home({ createGame, joinGame }) {
         <div className="logo">
           <h1>
             <span className="blue">BLEU</span>
-            <span className="vs">vs</span>
+            <span className="vs">VS</span>
             <span className="red">ROUGE</span>
           </h1>
+          <p className="tagline">INFILTRATION • DÉDUCTION • ÉLIMINATION</p>
         </div>
-        <p className="tagline">UN JEU D'INFILTRATION ET DE STRATÉGIE</p>
         <button onClick={() => setMode('create')}>📝 Créer une partie</button>
         <button className="secondary" onClick={() => setMode('join')}>
           🎯 Rejoindre une partie
