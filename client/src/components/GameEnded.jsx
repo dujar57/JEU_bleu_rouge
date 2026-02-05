@@ -54,7 +54,7 @@ function GameEnded({ endGameData, onReturnHome }) {
               >
                 <div>
                   <div className="player-name">
-                    {survivor.pseudo}
+                    Joueur {survivor.anonymousNumber}
                     {survivor.isTraitor && ' 🎭'}
                   </div>
                   <div className="player-info">
@@ -81,7 +81,7 @@ function GameEnded({ endGameData, onReturnHome }) {
           </h3>
           {endGameData.traitors.map((traitor, index) => (
             <div key={index} style={{ textAlign: 'center', fontSize: '16px' }}>
-              {traitor.pseudo} (Joueur #{traitor.anonymousNumber})
+              Joueur #{traitor.anonymousNumber} = {traitor.pseudo}
             </div>
           ))}
         </div>
@@ -100,7 +100,7 @@ function GameEnded({ endGameData, onReturnHome }) {
           </h3>
           {endGameData.lovers.map((lover, index) => (
             <div key={index} style={{ textAlign: 'center', fontSize: '16px' }}>
-              {lover.pseudo} ({lover.team === 'bleu' ? '🔵' : '🔴'} {lover.team})
+              Joueur #{lover.anonymousNumber} = {lover.pseudo} ({lover.team === 'bleu' ? '🔵' : '🔴'} {lover.team})
             </div>
           ))}
         </div>

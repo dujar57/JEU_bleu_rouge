@@ -230,7 +230,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           <h3 style={{ marginBottom: '10px', color: 'white' }}>{eliminationMessage.message}</h3>
           {eliminationMessage.eliminated && eliminationMessage.eliminated.map((dead, idx) => (
             <div key={idx} style={{ fontSize: '14px', marginTop: '5px' }}>
-              💀 {dead.pseudo} - {dead.reason}
+              💀 Joueur {dead.anonymousNumber} - {dead.reason}
             </div>
           ))}
         </div>
@@ -301,7 +301,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                     }}
                   >
                     <div style={{ fontWeight: 'bold' }}>
-                      #{player.anonymousNumber} {player.pseudo}
+                      Joueur {player.anonymousNumber}
                     </div>
                     <div style={{ fontSize: '12px', opacity: 0.8 }}>
                       {player.team === 'bleu' ? '🔵' : '🔴'} {player.team}
@@ -352,7 +352,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         background: 'rgba(255,255,255,0.05)',
         borderRadius: '5px'
       }}>
-        💡 #Numéro = Joueur anonyme | Nom = Identité réelle
+        💡 Tous les joueurs sont anonymes - Seul le numéro est visible
       </div>
 
       <div className="players-list">
@@ -361,18 +361,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
             <div key={index} className={`player-item ${player.team || ''}`}>
               <div>
                 <div className="player-name">
-                  <span style={{ 
-                    display: 'inline-block', 
-                    background: 'rgba(255,255,255,0.1)', 
-                    padding: '2px 8px', 
-                    borderRadius: '12px',
-                    fontSize: '11px',
-                    marginRight: '8px',
-                    fontWeight: 'bold'
-                  }}>
-                    #{player.anonymousNumber || index + 1}
-                  </span>
-                  {player.pseudo} {player.pseudo === pseudo && '(Vous)'}
+                  Joueur {player.anonymousNumber || index + 1} {player.pseudo === pseudo && '(Vous)'}
                 </div>
                 <div className="player-info">{player.realLifeInfo}</div>
               </div>
