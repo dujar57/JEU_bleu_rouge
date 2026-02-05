@@ -92,9 +92,12 @@ body::after {
   50% { transform: translateY(-10px) rotate(2deg); }
 }
 
-.logo-circle.placeholder::before {
-  content: '🎭';
-  font-size: 80px;
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
 .logo {

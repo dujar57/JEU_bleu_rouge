@@ -35,7 +35,7 @@ function Home({ createGame, joinGame }) {
   if (mode === '') {
     return (
       <div className="container">
-        <div className="logo-circle placeholder"></div>
+        <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
         <div className="logo">
           <h1>
             <span className="blue">BLEU</span>
