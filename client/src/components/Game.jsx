@@ -142,8 +142,115 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   };
 
   return (
-    <div className="container">
-      <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
+    <div style={{ display: 'flex', gap: '20px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+      {/* Panneau latéral rétro arcade - FIXED à droite */}
+      <div style={{
+        position: 'fixed',
+        right: '20px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '200px',
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+        border: '6px solid #0f3460',
+        boxShadow: '0 0 0 3px #e94560, 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(233,69,96,0.2)',
+        borderRadius: '15px',
+        padding: '20px 15px',
+        fontFamily: '"Courier New", monospace',
+        zIndex: 1000
+      }}>
+        {/* Timer 1: Temps de partie restant */}
+        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+          <div style={{ 
+            fontSize: '10px', 
+            color: '#0ff', 
+            letterSpacing: '1px',
+            marginBottom: '10px',
+            textShadow: '0 0 5px #0ff',
+            fontWeight: 'bold'
+          }}>
+            MATCH TIME
+          </div>
+          <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: '0 auto', display: 'block' }}>
+            <circle cx="70" cy="70" r="60" fill="none" stroke="#0f3460" strokeWidth="8" />
+            <circle cx="70" cy="70" r="60" fill="none" stroke="#e94560" strokeWidth="8"
+              strokeDasharray={`${timeRemaining ? (timeRemaining / 1800000) * 377 : 377} 377`}
+              strokeLinecap="round"
+              transform="rotate(-90 70 70)"
+              style={{ 
+                transition: 'stroke-dasharray 1s linear',
+                filter: 'drop-shadow(0 0 8px #e94560)'
+              }}
+            />
+            <circle cx="70" cy="70" r="50" fill="#16213e" stroke="#0ff" strokeWidth="2" 
+              style={{ filter: 'drop-shadow(0 0 5px #0ff)' }}
+            />
+            <text x="70" y="65" textAnchor="middle" fill="#0ff" fontSize="18" fontFamily="monospace" fontWeight="bold"
+              style={{ textShadow: '0 0 5px #0ff' }}>
+              {timeRemaining ? Math.floor(timeRemaining / 60000) : '30'}
+            </text>
+            <text x="70" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
+              MIN
+            </text>
+          </svg>
+        </div>
+
+        {/* Timer 2: Prochain vote */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            fontSize: '10px', 
+            color: '#ff0', 
+            letterSpacing: '1px',
+            marginBottom: '10px',
+            textShadow: '0 0 5px #ff0',
+            fontWeight: 'bold'
+          }}>
+            NEXT VOTE
+          </div>
+          <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: '0 auto', display: 'block' }}>
+            <circle cx="70" cy="70" r="60" fill="none" stroke="#0f3460" strokeWidth="8" />
+            <circle cx="70" cy="70" r="60" fill="none" stroke="#00ff88" strokeWidth="8"
+              strokeDasharray={voteInfo && voteInfo.discussionEnd ? 
+                `${((voteInfo.discussionEnd - Date.now()) / 120000) * 377} 377` : '377 377'}
+              strokeLinecap="round"
+              transform="rotate(-90 70 70)"
+              style={{ 
+                transition: 'stroke-dasharray 1s linear',
+                filter: 'drop-shadow(0 0 8px #00ff88)'
+              }}
+            />
+            <circle cx="70" cy="70" r="50" fill="#16213e" stroke="#ff0" strokeWidth="2"
+              style={{ filter: 'drop-shadow(0 0 5px #ff0)' }}
+            />
+            <text x="70" y="65" textAnchor="middle" fill="#ff0" fontSize="18" fontFamily="monospace" fontWeight="bold"
+              style={{ textShadow: '0 0 5px #ff0' }}>
+              {voteInfo && voteInfo.discussionEnd ? 
+                Math.floor((voteInfo.discussionEnd - Date.now()) / 1000) : '--'}
+            </text>
+            <text x="70" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
+              SEC
+            </text>
+          </svg>
+        </div>
+
+        {/* Indicateurs de phase */}
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '8px', 
+          background: votingPhase ? 'rgba(233,69,96,0.3)' : 'rgba(15,52,96,0.3)',
+          border: `2px solid ${votingPhase ? '#e94560' : '#0f3460'}`,
+          borderRadius: '5px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '9px', color: '#fff', letterSpacing: '1px', fontWeight: 'bold' }}>
+            {votingPhase === 'VOTING' ? '🗳️ VOTE' : 
+             votingPhase === 'DISCUSSION' ? '💬 TALK' : '⏸️ WAIT'}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone principale du jeu */}
+      <div className="container" style={{ flex: 1, marginRight: '240px' }}>
+    <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
       <div className="logo">
         <h1 style={{ fontSize: '48px', marginBottom: '15px' }}>
           <span className="blue">BLEU</span>
@@ -151,31 +258,6 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           <span className="red">ROUGE</span>
         </h1>
       </div>
-      
-      {timeRemaining !== null && (
-        <div style={{
-          marginBottom: '20px',
-          padding: '15px',
-          background: timeRemaining < 300000 
-            ? 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)'
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: '10px',
-          textAlign: 'center',
-          animation: timeRemaining < 60000 ? 'pulse 1s infinite' : 'none'
-        }}>
-          <div style={{ fontSize: '14px', opacity: 0.8, marginBottom: '5px' }}>
-            ⏰ Temps restant
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
-            {formatTime(timeRemaining)}
-          </div>
-          {timeRemaining < 300000 && (
-            <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
-              ⚠️ Fin de partie imminente !
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="role-card">
         <h2>Votre Rôle Secret</h2>
@@ -561,6 +643,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           </form>
         </div>
       )}
+      </div>
     </div>
   );
 }
