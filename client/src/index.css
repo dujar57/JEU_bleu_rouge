@@ -1446,10 +1446,118 @@ button.secondary:hover {
 @media (max-width: 768px) {
   body {
     padding: 0;
+    align-items: flex-start;
   }
   
   body::after {
     display: none;
+  }
+  
+  .container {
+    padding: 20px !important;
+    border-radius: 0;
+    min-height: 100vh;
+  }
+  
+  /* Logo plus petit sur mobile */
+  .logo-circle {
+    width: 140px;
+    height: 140px;
+    margin: 20px auto 30px;
+  }
+  
+  /* Textes adaptatifs */
+  h1 {
+    font-size: 42px !important;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+  }
+  
+  .tagline {
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 25px;
+  }
+  
+  /* Boutons plus grands pour touch */
+  button {
+    min-height: 48px;
+    font-size: 16px !important;
+    padding: 14px 20px !important;
+  }
+  
+  /* Inputs tactiles */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  textarea {
+    min-height: 48px;
+    font-size: 16px !important;
+    padding: 12px !important;
+  }
+  
+  /* Grilles adaptatives */
+  .players-list {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Code de partie plus lisible */
+  .game-code .code {
+    font-size: 48px !important;
+    padding: 20px !important;
+  }
+  
+  /* Panneau latéral devient en bas sur mobile */
+  #root {
+    padding: 0;
+  }
+  
+  /* Notifications mobiles */
+  .notification {
+    max-width: calc(100% - 40px) !important;
+    right: 20px !important;
+    left: 20px !important;
+  }
+}
+
+/* Petits mobiles (< 375px) */
+@media (max-width: 374px) {
+  h1 {
+    font-size: 36px !important;
+  }
+  
+  .logo-circle {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .game-code .code {
+    font-size: 40px !important;
+  }
+}
+
+/* Tablettes portrait */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding: 40px !important;
+  }
+  
+  h1 {
+    font-size: 64px !important;
+  }
+}
+
+/* Mode paysage mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  .logo-circle {
+    width: 100px;
+    height: 100px;
+    margin: 10px auto 20px;
+  }
+  
+  h1 {
+    font-size: 36px !important;
+    margin-bottom: 10px;
   }
   
   .container {

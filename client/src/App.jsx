@@ -7,6 +7,8 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 import GameEnded from './components/GameEnded';
 import ProfilePage from './components/ProfilePage';
+import Tutorial from './components/Tutorial';
+import SettingsPanel from './components/SettingsPanel';
 
 // URL UNIQUE - RENDER UNIQUEMENT
 const SOCKET_URL = 'https://jeu-bleu-rouge.onrender.com';
@@ -54,6 +56,15 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [csrfToken, setCsrfToken] = useState(null); // ✅ Token CSRF
+  const [showTutorial, setShowTutorial] = useState(false); // État pour le tutoriel
+
+  // Vérifier si c'est la première visite
+  useEffect(() => {
+    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+    if (!tutorialCompleted) {
+      setShowTutorial(true);
+    }
+  }, []);
 
   // 🔐 Récupérer le token CSRF au démarrage
   useEffect(() => {
@@ -178,6 +189,51 @@ function App() {
 
   return (
     <div>
+      {/* Bouton d'aide flottant pour rouvrir le tutoriel */}
+      {!showTutorial && screen === 'HOME' && (
+        <button
+          onClick={() => setShowTutorial(true)}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #2C5F7F 0%, #1a3a4d 100%)',
+            border: '3px solid #8B6F47',
+            color: '#FFF',
+            fontSize: '28px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+          }}
+          title="Ouvrir le tutoriel"
+        >
+          ?
+        </button>
+      )}
+
+      {/* Tutorial modal */}
+      {showTutorial && (
+        <Tutorial onClose={() => setShowTutorial(false)} />
+      )}
+
+      {/* Panneau de paramètres */}
+      <SettingsPanel />
+
       {!isConnected && (
         <div style={{ 
           position: 'fixed',

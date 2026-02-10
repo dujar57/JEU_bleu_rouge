@@ -1,6 +1,8 @@
 // -*- coding: utf-8 -*-
 // @charset "UTF-8"
 import { useState, useEffect } from 'react';
+import GameHistory from './GameHistory';
+import { sendNotification, requestNotificationPermission } from '../utils/notifications';
 
 function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -15,6 +17,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const chatEndRef = useState(null);
+  const [isEliminated, setIsEliminated] = useState(false); // État spectateur
 
   // Système de notifications flottantes
   const addNotification = (message, type = 'info', duration = 5000) => {
@@ -26,6 +29,19 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     }, duration);
   };
 
+  // Vérifier au chargement si le joueur est déjà éliminé
+  useEffect(() => {
+    // Demander la permission pour les notifications
+    requestNotificationPermission();
+
+    if (gameData && gameData.players) {
+      const currentPlayer = gameData.players.find(p => p.pseudo === pseudo);
+      if (currentPlayer && !currentPlayer.isAlive) {
+        setIsEliminated(true);
+      }
+    }
+  }, [gameData, pseudo]);
+
   useEffect(() => {
     // Écouter les changements de phase de vote
     socket.on('voting_phase_change', (data) => {
@@ -34,11 +50,21 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       setVoteConfirmed(false);
       setSelectedVote(null);
       
-      // Notification automatique
+      // Notification automatique avec son
       if (data.phase === 'DISCUSSION') {
         addNotification(`💬 Phase de discussion ${data.voteNumber}/${data.totalVotes} - Préparez-vous à voter !`, 'info');
+        sendNotification(
+          'Phase de Discussion',
+          `Discussion ${data.voteNumber}/${data.totalVotes} - Préparez vos arguments`,
+          'default'
+        );
       } else if (data.phase === 'VOTING') {
         addNotification(`🗳️ VOTE EN COURS - N'oubliez pas de voter ! ${data.voteNumber}/${data.totalVotes}`, 'warning', 8000);
+        sendNotification(
+          'VOTE EN COURS !',
+          `C'est l'heure de voter ! (${data.voteNumber}/${data.totalVotes})`,
+          'vote'
+        );
       }
     });
 
@@ -46,11 +72,38 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     socket.on('vote_confirmed', (data) => {
       setVoteConfirmed(true);
       addNotification('✅ Votre vote a été enregistré avec succès !', 'success');
+      sendNotification(
+        'Vote Confirmé',
+        'Votre vote a bien été enregistré',
+        'default'
+      );
     });
 
     // Écouter les résultats de vote
     socket.on('vote_results', (data) => {
       setEliminationMessage(data);
+      
+      // Vérifier si le joueur actuel a été éliminé
+      if (data.eliminated && data.eliminated.length > 0) {
+        const wasEliminated = data.eliminated.some(player => player.pseudo === pseudo);
+        if (wasEliminated) {
+          setIsEliminated(true);
+          addNotification('💀 Vous avez été éliminé ! Mode spectateur activé.', 'warning', 10000);
+          sendNotification(
+            '💀 Vous êtes éliminé',
+            'Vous pouvez continuer à suivre la partie en mode spectateur',
+            'elimination'
+          );
+        } else {
+          // Son d'élimination pour les autres
+          sendNotification(
+            'Élimination',
+            `${data.eliminated.length} joueur(s) éliminé(s)`,
+            'elimination'
+          );
+        }
+      }
+      
       setTimeout(() => {
         setEliminationMessage(null);
         setVotingPhase(null);
@@ -64,6 +117,11 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       if (!showChat) {
         setUnreadCount(prev => prev + 1);
         addNotification(`💬 Nouveau message de Joueur #${data.playerNumber}`, 'info', 3000);
+        sendNotification(
+          'Nouveau message',
+          `Joueur #${data.playerNumber}: ${data.message.substring(0, 50)}...`,
+          'message'
+        );
       }
       // Auto-scroll vers le bas
       setTimeout(() => {
@@ -409,6 +467,37 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         )}
       </div>
 
+      {/* Bandeau Mode Spectateur */}
+      {isEliminated && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '20px',
+          background: 'linear-gradient(135deg, #434343 0%, #000000 100%)',
+          border: '4px solid #E74C3C',
+          borderRadius: '12px',
+          textAlign: 'center',
+          color: 'white',
+          boxShadow: '0 0 20px rgba(231, 76, 60, 0.5), inset 0 0 20px rgba(231, 76, 60, 0.2)'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '10px' }}>👻</div>
+          <h3 style={{ 
+            color: '#E74C3C', 
+            marginBottom: '10px',
+            fontSize: '24px',
+            textShadow: '0 0 10px rgba(231, 76, 60, 0.8)'
+          }}>
+            MODE SPECTATEUR
+          </h3>
+          <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+            Vous avez été éliminé
+          </div>
+          <div style={{ fontSize: '14px', color: '#ccc', lineHeight: '1.6' }}>
+            Vous pouvez continuer à suivre la partie et utiliser le chat,<br />
+            mais vous ne pouvez plus voter.
+          </div>
+        </div>
+      )}
+
       {/* Affichage des résultats d'élimination */}
       {eliminationMessage && (
         <div style={{
@@ -456,18 +545,24 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         <div style={{
           marginBottom: '20px',
           padding: '20px',
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          background: isEliminated 
+            ? 'linear-gradient(135deg, #757575 0%, #424242 100%)'
+            : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
           borderRadius: '10px',
-          color: 'white'
+          color: 'white',
+          opacity: isEliminated ? 0.6 : 1
         }}>
           <h3 style={{ color: 'white', marginBottom: '10px', textAlign: 'center' }}>
             🗳️ Phase de Vote {voteInfo.voteNumber}/{voteInfo.totalVotes}
           </h3>
           <div style={{ fontSize: '14px', textAlign: 'center', marginBottom: '15px' }}>
-            Votez pour éliminer un joueur (n'importe quelle équipe)
+            {isEliminated 
+              ? '👻 Vous ne pouvez pas voter (éliminé)'
+              : 'Votez pour éliminer un joueur (n\'importe quelle équipe)'
+            }
           </div>
           
-          {!voteConfirmed ? (
+          {!voteConfirmed && !isEliminated ? (
             <>
               <div style={{ 
                 maxHeight: '200px', 
@@ -522,11 +617,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                 </button>
               )}
             </>
-          ) : (
+          ) : voteConfirmed && !isEliminated ? (
             <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: 'bold' }}>
               ✅ Vote enregistré !
             </div>
-          )}
+          ) : isEliminated ? (
+            <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: 'bold', opacity: 0.7 }}>
+              👻 Vous êtes en mode spectateur
+            </div>
+          ) : null}
           
           <div style={{ fontSize: '12px', marginTop: '10px', textAlign: 'center', opacity: 0.9 }}>
             Fin du vote dans {formatTime(voteInfo.votingEnd - Date.now())}
@@ -866,6 +965,9 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           </form>
         </div>
       )}
+
+      {/* Historique de la partie */}
+      <GameHistory socket={socket} gameCode={gameCode} />
       </div>
     </div>
   );
