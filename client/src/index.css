@@ -1384,3 +1384,75 @@ button.secondary:hover {
     transform: scale(1.05);
   }
 }
+
+/* === ANIMATIONS CHAT === */
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpMobile {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll personnalisé pour le chat */
+.chat-messages-container {
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #e9ecef;
+}
+
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #e9ecef;
+  border-radius: 10px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Responsive mobile pour le chat */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+  }
+  
+  body::after {
+    display: none;
+  }
+  
+  .container {
+    padding: 15px !important;
+  }
+}

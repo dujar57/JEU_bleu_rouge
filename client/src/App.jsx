@@ -10,16 +10,24 @@ import ProfilePage from './components/ProfilePage';
 
 // URL UNIQUE - RENDER UNIQUEMENT
 const SOCKET_URL = 'https://jeu-bleu-rouge.onrender.com';
+const API_URL = 'https://jeu-bleu-rouge.onrender.com';
 
 console.log('🔌 Connexion Socket.io vers:', SOCKET_URL);
 
+// ✅ SÉCURITÉ : Envoyer le token JWT si disponible
+const token = localStorage.getItem('token');
 const socket = io(SOCKET_URL, {
+  auth: {
+    token: token  // ✅ Envoi du token pour authentification
+  },
   transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
   reconnectionAttempts: 5
 });
+
+console.log('🔐 Socket.io', token ? 'avec authentification' : 'mode anonyme');
 
 // Debug socket
 socket.onAny((event, ...args) => {
@@ -45,6 +53,27 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [csrfToken, setCsrfToken] = useState(null); // ✅ Token CSRF
+
+  // 🔐 Récupérer le token CSRF au démarrage
+  useEffect(() => {
+    async function fetchCsrfToken() {
+      try {
+        const response = await fetch(`${API_URL}/api/csrf-token`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCsrfToken(data.csrfToken);
+          console.log('🔐 Token CSRF récupéré');
+        }
+      } catch (error) {
+        console.error('❌ Erreur récupération token CSRF:', error);
+      }
+    }
+    
+    fetchCsrfToken();
+  }, []);
 
   useEffect(() => {
     // Charger l'utilisateur depuis localStorage
@@ -215,6 +244,7 @@ function App() {
           createGame={createGame} 
           joinGame={joinGame}
           onViewProfile={() => setScreen('PROFILE')}
+          csrfToken={csrfToken}
         />
       )}
 
@@ -226,6 +256,7 @@ function App() {
             setScreen('HOME');
             // Le rejoin sera géré par Home
           }}
+          csrfToken={csrfToken}
         />
       )}
 

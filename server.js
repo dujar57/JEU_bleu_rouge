@@ -1,16 +1,26 @@
 // -*- coding: utf-8 -*-
 // @charset "UTF-8"
 require('dotenv').config();
+
+// ✅ SÉCURITÉ : Valider les variables d'environnement au démarrage
+const { validateEnv } = require('./utils/validateEnv');
+validateEnv();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const mongoose = require('mongoose');
+const { doubleCsrf } = require('csrf-csrf');
+const { sanitizeMiddleware } = require('./utils/sanitizer');
 const authRouter = require('./routes/auth');
 const User = require('./models/User');
 const Game = require('./models/Game');
@@ -27,10 +37,40 @@ const {
 
 const app = express();
 
-// Sécurité HTTP headers
+// Trust proxy pour Render
+app.set('trust proxy', 1);
+
+// Force HTTPS en production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(`https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
+
+// Sécurité HTTP headers renforcée
 app.use(helmet({
-  contentSecurityPolicy: false, // Désactivé pour Socket.io
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "wss://jeu-bleu-rouge.onrender.com", "https://jeu-bleu-rouge.onrender.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  xssFilter: true
 }));
 
 // Rate limiting global
@@ -58,17 +98,98 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // En production, rejeter les requêtes sans origin (possibles attaques)
+    if (!origin && process.env.NODE_ENV === 'production') {
+      return callback(new Error('Non autorisé par CORS'));
+    }
+    // Accepter les origins autorisées ou les requêtes locales (sans origin)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn('⚠️ Origine rejetée par CORS:', origin);
       callback(new Error('Non autorisé par CORS'));
     }
   },
   credentials: true
 }));
 
+app.use(cookieParser());
 app.use(express.json({ limit: '10kb' })); // Limite la taille des requêtes
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize()); // Protection injection NoSQL
+
+// ✅ SÉCURITÉ : Protection CSRF et sanitization HTML
+const {
+  generateToken, // Génère un token CSRF
+  doubleCsrfProtection, // Middleware de protection
+} = doubleCsrf({
+  getSecret: () => process.env.JWT_SECRET, // Utilise le même secret que JWT
+  cookieName: '__Host-psifi.x-csrf-token',
+  cookieOptions: {
+    sameSite: 'strict',
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true
+  },
+  size: 64,
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+});
+
+// Appliquer la sanitization HTML sur toutes les entrées
+app.use(sanitizeMiddleware);
+
+// Route pour obtenir un token CSRF
+app.get('/api/csrf-token', (req, res) => {
+  const csrfToken = generateToken(req, res);
+  res.json({ csrfToken });
+});
+
+// Appliquer la protection CSRF sur les routes sensibles
+app.use('/api/auth', doubleCsrfProtection);
+app.use('/api/game', doubleCsrfProtection);
+
+// Blacklist de tokens pour logout sécurisé
+const tokenBlacklist = new Set();
+
+// Middleware anti-bot avec honeypot
+app.use((req, res, next) => {
+  // Vérifier le header User-Agent
+  const userAgent = req.get('User-Agent');
+  if (!userAgent || userAgent.length < 10) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
+  
+  // Bloquer les bots connus
+  const botPatterns = /bot|crawler|spider|scraper|curl|wget|python-requests/i;
+  if (botPatterns.test(userAgent) && !req.path.startsWith('/api/')) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
+  
+  next();
+});
+
+// Logging des requêtes suspectes
+const suspiciousActivity = new Map();
+app.use((req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const key = `${ip}_${Date.now()}`;
+  
+  // Détecter les scans de ports/endpoints
+  if (req.path.includes('..') || req.path.includes('~') || 
+      req.path.match(/\.(env|git|sql|bak|config)$/i)) {
+    console.warn(`⚠️ Activité suspecte détectée de ${ip}: ${req.path}`);
+    
+    const count = suspiciousActivity.get(ip) || 0;
+    suspiciousActivity.set(ip, count + 1);
+    
+    if (count > 5) {
+      console.error(`🚨 IP bloquée pour activité malveillante: ${ip}`);
+      return res.status(403).json({ error: 'Accès bloqué' });
+    }
+  }
+  
+  next();
+});
 
 // Forcer l'encodage UTF-8 pour toutes les réponses
 // Ajoute automatiquement charset=utf-8 aux types textuels sans écraser le type
@@ -104,8 +225,13 @@ if (!mongoUri) {
   process.exit(1);
 }
 
-// Options de connexion MongoDB modernes (sans les options obsolètes)
-mongoose.connect(mongoUri)
+// Options de connexion MongoDB modernes avec timeouts de sécurité
+mongoose.connect(mongoUri, {
+  serverSelectionTimeoutMS: 5000,    // Timeout pour sélection du serveur
+  socketTimeoutMS: 45000,            // Timeout pour opérations socket
+  maxPoolSize: 10,                   // Limite les connexions simultanées
+  minPoolSize: 2                     // Garde des connexions actives
+})
 .then(() => {
   console.log('✅ Connecté à MongoDB');
   mongoConnected = true;
@@ -159,6 +285,35 @@ const io = new Server(server, {
   },
   pingTimeout: 60000,
   pingInterval: 25000
+});
+
+// ============================================
+// ✅ SÉCURITÉ : MIDDLEWARE D'AUTHENTIFICATION SOCKET.IO
+// ============================================
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  
+  if (!token) {
+    // ✅ Autoriser les connexions anonymes mais avec flag
+    socket.isAuthenticated = false;
+    socket.ipAddress = socket.handshake.address;
+    console.log(`⚠️  Socket.io non authentifié depuis ${socket.ipAddress}`);
+    return next();
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.userId;
+    socket.isAuthenticated = true;
+    console.log(`✅ Socket.io authentifié: User ${decoded.userId}`);
+    next();
+  } catch (error) {
+    console.log(`❌ Token Socket.io invalide: ${error.message}`);
+    // Autoriser quand même mais marquer comme non authentifié
+    socket.isAuthenticated = false;
+    socket.ipAddress = socket.handshake.address;
+    return next();
+  }
 });
 
 // ==========================
@@ -739,8 +894,16 @@ io.on('connection', (socket) => {
   socket.on('create_game', async (data) => {
     console.log('📥 Reçu demande de création de partie:', data);
     
+    // ✅ SÉCURITÉ : Vérifier l'authentification
+    if (!socket.isAuthenticated) {
+      console.log(`❌ Tentative de création sans auth depuis ${socket.ipAddress}`);
+      return socket.emit('error', { 
+        message: '🔒 Vous devez être connecté pour créer une partie' 
+      });
+    }
+    
     // Rate limiting
-    const rateCheck = checkRateLimit(socket.id, 'create_game', 3, 60000);
+    const rateCheck = checkRateLimit(socket.userId || socket.id, 'create_game', 3, 60000);
     if (!rateCheck.allowed) {
       socket.emit('error', { message: rateCheck.error });
       return;
@@ -841,8 +1004,10 @@ io.on('connection', (socket) => {
   // EVENT: REJOINDRE UNE PARTIE
   // ==========================
   socket.on('join_game', async (data) => {
-    // Rate limiting
-    const rateCheck = checkRateLimit(socket.id, 'join_game', 5, 60000);
+    // ✅ Rate limiting adapté selon l'authentification
+    const identifier = socket.isAuthenticated ? socket.userId : socket.ipAddress;
+    const maxAttempts = socket.isAuthenticated ? 5 : 3; // Plus permissif pour users auth
+    const rateCheck = checkRateLimit(identifier, 'join_game', maxAttempts, 60000);
     if (!rateCheck.allowed) {
       socket.emit('error', { message: rateCheck.error });
       return;
@@ -955,8 +1120,16 @@ io.on('connection', (socket) => {
   // EVENT: LANCER LA PARTIE
   // ==========================
   socket.on('start_game', async (data) => {
+    // ✅ SÉCURITÉ : Seul le créateur authentifié peut lancer
+    if (!socket.isAuthenticated) {
+      console.log(`❌ Tentative de lancement sans auth depuis ${socket.ipAddress}`);
+      return socket.emit('error', { 
+        message: '🔒 Vous devez être connecté pour lancer une partie' 
+      });
+    }
+    
     // Rate limiting
-    const rateCheck = checkRateLimit(socket.id, 'start_game', 3, 60000);
+    const rateCheck = checkRateLimit(socket.userId, 'start_game', 3, 60000);
     if (!rateCheck.allowed) {
       socket.emit('error', { message: rateCheck.error });
       return;
@@ -987,12 +1160,28 @@ io.on('connection', (socket) => {
     
     // Vérifier que c'est bien l'hôte qui démarre
     if (game.players[0].socketId !== socket.id) {
+      console.log(`⚠️ Tentative de démarrage non autorisée par ${socket.id}`);
       socket.emit('error', { message: 'Seul l\'hôte peut démarrer la partie.' });
+      return;
+    }
+    
+    // Anti-triche : vérifier que la partie n'a pas déjà commencé
+    if (game.status === 'PLAYING') {
+      console.log(`⚠️ Tentative de redémarrage d'une partie en cours par ${socket.id}`);
+      socket.emit('error', { message: 'La partie a déjà commencé.' });
       return;
     }
 
     if (game.players.length < 4) {
       socket.emit('error', { message: 'Il faut au moins 4 joueurs pour commencer.' });
+      return;
+    }
+    
+    // Anti-triche : vérifier que tous les joueurs sont connectés
+    const disconnectedPlayers = game.players.filter(p => !p.socketId);
+    if (disconnectedPlayers.length > 0) {
+      console.log(`⚠️ Tentative de démarrage avec des joueurs déconnectés`);
+      socket.emit('error', { message: 'Tous les joueurs doivent être connectés.' });
       return;
     }
 
@@ -1183,6 +1372,12 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Vous ne pouvez pas envoyer de messages.' });
       return;
     }
+    
+    // Anti-triche : vérifier que la partie est en cours
+    if (game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'Les messages ne sont disponibles qu\'en partie.' });
+      return;
+    }
 
     const chatMessage = {
       playerNumber: player.anonymousNumber,
@@ -1231,8 +1426,10 @@ io.on('connection', (socket) => {
   // EVENT: VOTER
   // ==========================
   socket.on('cast_vote', (data) => {
-    // Rate limiting pour les votes
-    const rateCheck = checkRateLimit(socket.id, 'cast_vote', 10, 60000);
+    // ✅ Rate limiting adapté selon l'authentification
+    const identifier = socket.isAuthenticated ? socket.userId : socket.ipAddress;
+    const maxVotes = socket.isAuthenticated ? 10 : 5; // Plus permissif pour users auth
+    const rateCheck = checkRateLimit(identifier, 'cast_vote', maxVotes, 60000);
     if (!rateCheck.allowed) {
       socket.emit('error', { message: rateCheck.error });
       return;
@@ -1278,6 +1475,20 @@ io.on('connection', (socket) => {
     // Empêcher le vote pour soi-même
     if (voter.socketId === target.socketId) {
       socket.emit('error', { message: 'Vous ne pouvez pas voter pour vous-même.' });
+      return;
+    }
+    
+    // Anti-triche : vérifier que le joueur n'a pas déjà voté
+    if (voter.hasVoted) {
+      console.log(`⚠️ Tentative de double vote par ${voter.pseudo} (${voter.socketId})`);
+      socket.emit('error', { message: 'Vous avez déjà voté.' });
+      return;
+    }
+    
+    // Anti-triche : vérifier que la cible est de l'équipe adverse
+    if (voter.team === target.team) {
+      console.log(`⚠️ Tentative de vote pour son équipe par ${voter.pseudo}`);
+      socket.emit('error', { message: 'Vous ne pouvez pas voter pour votre propre équipe.' });
       return;
     }
 

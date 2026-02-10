@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import secureFetch from '../utils/api';
 
-export default function Register({ onBack, onRegisterSuccess }) {
+export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,11 +26,10 @@ export default function Register({ onBack, onRegisterSuccess }) {
     setLoading(true);
 
     try {
-      const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/register', {
+      const response = await secureFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: pseudo, email, password })
-      });
+      }, csrfToken);
 
       const data = await response.json();
 

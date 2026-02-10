@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import secureFetch from '../utils/api';
 
-export default function Login({ onBack, onLoginSuccess }) {
+export default function Login({ onBack, onLoginSuccess, csrfToken }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -12,11 +13,10 @@ export default function Login({ onBack, onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/login', {
+      const response = await secureFetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-      });
+      }, csrfToken);
 
       const data = await response.json();
 
@@ -27,7 +27,7 @@ export default function Login({ onBack, onLoginSuccess }) {
         if (onLoginSuccess) onLoginSuccess(data.user);
         onBack();
       } else {
-        setError(data.message || 'Erreur de connexion');
+        setError(data.message || data.error || 'Erreur de connexion');
       }
     } catch (err) {
       setError('Erreur réseau - Veuillez réessayer');

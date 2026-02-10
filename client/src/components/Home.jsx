@@ -5,7 +5,7 @@ import Login from './Login';
 import Register from './Register';
 import AccountMenu from './AccountMenu';
 
-function Home({ createGame, joinGame, onViewProfile }) {
+function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
   const [mode, setMode] = useState(''); // 'create', 'join', 'login', ou 'register'
   const [pseudo, setPseudo] = useState('');
   const [realLifeInfo, setRealLifeInfo] = useState('');
@@ -60,11 +60,11 @@ function Home({ createGame, joinGame, onViewProfile }) {
   };
 
   if (mode === 'login') {
-    return <Login onBack={() => setMode('')} onLoginSuccess={handleLoginSuccess} />;
+    return <Login onBack={() => setMode('')} onLoginSuccess={handleLoginSuccess} csrfToken={csrfToken} />;
   }
 
   if (mode === 'register') {
-    return <Register onBack={() => setMode('')} />;
+    return <Register onBack={() => setMode('')} csrfToken={csrfToken} />;
   }
 
   if (mode === '') {
@@ -88,6 +88,7 @@ function Home({ createGame, joinGame, onViewProfile }) {
             user={user}
             onClose={() => setShowAccountMenu(false)}
             onLogout={handleLogout}
+            csrfToken={csrfToken}
             onRejoinGame={(gameCode) => {
               setCode(gameCode);
               setShowAccountMenu(false);

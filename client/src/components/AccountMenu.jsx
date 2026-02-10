@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import secureFetch from '../utils/api';
 
-export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
+export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csrfToken }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [matchHistory, setMatchHistory] = useState([]);
   const [currentGames, setCurrentGames] = useState([]);
@@ -33,11 +34,8 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
   const fetchUserData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await secureFetch('/api/auth/profile', {
+        method: 'GET'
       });
       
       if (response.ok) {
@@ -69,7 +67,6 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const updateData = {};
       
       if (formData.username !== user.username) updateData.username = formData.username;
@@ -84,14 +81,10 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
         return;
       }
 
-      const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/update-profile', {
+      const response = await secureFetch('/api/auth/update-profile', {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(updateData)
-      });
+      }, csrfToken);
 
       const data = await response.json();
 

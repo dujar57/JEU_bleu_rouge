@@ -13,6 +13,8 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const [currentMessage, setCurrentMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const chatEndRef = useState(null);
 
   // Système de notifications flottantes
   const addNotification = (message, type = 'info', duration = 5000) => {
@@ -60,8 +62,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     socket.on('chat_message', (data) => {
       setMessages(prev => [...prev, data]);
       if (!showChat) {
+        setUnreadCount(prev => prev + 1);
         addNotification(`💬 Nouveau message de Joueur #${data.playerNumber}`, 'info', 3000);
       }
+      // Auto-scroll vers le bas
+      setTimeout(() => {
+        if (chatEndRef[0]) {
+          chatEndRef[0].scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
     });
 
     return () => {
@@ -185,6 +194,21 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     });
     
     setCurrentMessage('');
+    
+    // Auto-scroll immédiatement
+    setTimeout(() => {
+      if (chatEndRef[0]) {
+        chatEndRef[0].scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
+  };
+
+  // Ouvrir le chat et réinitialiser le compteur
+  const toggleChat = () => {
+    setShowChat(!showChat);
+    if (!showChat) {
+      setUnreadCount(0);
+    }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -549,199 +573,292 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         </div>
       )}
 
-      {/* Bouton Chat Flottant */}
+      {/* Bouton Chat Flottant - Responsive */}
       <button
-        onClick={() => setShowChat(!showChat)}
+        onClick={toggleChat}
+        aria-label="Ouvrir le chat"
         style={{
           position: 'fixed',
           bottom: '20px',
           left: '20px',
-          width: '70px',
-          height: '70px',
+          width: window.innerWidth < 768 ? '60px' : '70px',
+          height: window.innerWidth < 768 ? '60px' : '70px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: showChat 
+            ? 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)'
+            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           border: '4px solid #E8D5B7',
           color: 'white',
-          fontSize: '28px',
+          fontSize: window.innerWidth < 768 ? '24px' : '28px',
           cursor: 'pointer',
           boxShadow: '0 0 0 4px #2C5F7F, 0 8px 25px rgba(0,0,0,0.4)',
           zIndex: 1001,
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
         onMouseEnter={(e) => {
-          e.target.style.transform = 'scale(1.15)';
+          e.target.style.transform = 'scale(1.15) rotate(5deg)';
           e.target.style.boxShadow = '0 0 0 4px #2C5F7F, 0 12px 35px rgba(102,126,234,0.6)';
         }}
         onMouseLeave={(e) => {
-          e.target.style.transform = 'scale(1)';
+          e.target.style.transform = 'scale(1) rotate(0deg)';
           e.target.style.boxShadow = '0 0 0 4px #2C5F7F, 0 8px 25px rgba(0,0,0,0.4)';
         }}
       >
-        💬
-        {messages.length > 0 && (
+        {showChat ? '✕' : '💬'}
+        {unreadCount > 0 && !showChat && (
           <span style={{
             position: 'absolute',
             top: '-5px',
             right: '-5px',
             background: '#ff4444',
             borderRadius: '50%',
-            width: '24px',
+            minWidth: '24px',
             height: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '12px',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            padding: '0 6px',
+            boxShadow: '0 2px 8px rgba(255,68,68,0.5)',
+            animation: 'pulse 2s infinite'
           }}>
-            {messages.length > 9 ? '9+' : messages.length}
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Fenêtre de Chat */}
+      {/* Fenêtre de Chat - RESPONSIVE */}
       {showChat && (
         <div style={{
           position: 'fixed',
-          bottom: '100px',
-          left: '20px',
-          width: '380px',
-          maxWidth: 'calc(100vw - 40px)',
-          height: '520px',
+          bottom: window.innerWidth < 768 ? '0' : '100px',
+          left: window.innerWidth < 768 ? '0' : '20px',
+          right: window.innerWidth < 768 ? '0' : 'auto',
+          width: window.innerWidth < 768 ? '100%' : '420px',
+          maxWidth: window.innerWidth < 768 ? '100%' : 'calc(100vw - 40px)',
+          height: window.innerWidth < 768 ? '100vh' : '580px',
+          maxHeight: window.innerWidth < 768 ? '100vh' : 'calc(100vh - 120px)',
           background: '#E8D5B7',
-          border: '6px solid #2C5F7F',
-          borderRadius: '15px',
-          boxShadow: '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)',
+          border: window.innerWidth < 768 ? 'none' : '6px solid #2C5F7F',
+          borderRadius: window.innerWidth < 768 ? '0' : '15px',
+          boxShadow: window.innerWidth < 768 
+            ? 'none' 
+            : '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)',
           display: 'flex',
           flexDirection: 'column',
-          zIndex: 999,
-          overflow: 'hidden'
+          zIndex: 9999,
+          overflow: 'hidden',
+          animation: window.innerWidth < 768 ? 'slideUpMobile 0.3s ease-out' : 'slideUp 0.3s ease-out'
         }}>
           {/* En-tête du chat */}
           <div style={{
-            padding: '15px',
+            padding: window.innerWidth < 768 ? '18px' : '15px',
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
           }}>
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>💬 Chat Anonyme</div>
-              <div style={{ fontSize: '11px', opacity: 0.9 }}>Messages par numéro de joueur</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 'bold', fontSize: window.innerWidth < 768 ? '18px' : '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                💬 Chat Anonyme
+                {messages.length > 0 && (
+                  <span style={{
+                    background: 'rgba(255,255,255,0.25)',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'normal'
+                  }}>
+                    {messages.length}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>Messages par numéro de joueur</div>
             </div>
             <button
-              onClick={() => setShowChat(false)}
+              onClick={toggleChat}
+              aria-label="Fermer le chat"
               style={{
                 background: 'rgba(255,255,255,0.2)',
                 border: 'none',
                 color: 'white',
-                width: '30px',
-                height: '30px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 cursor: 'pointer',
-                fontSize: '18px'
+                fontSize: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+                flexShrink: 0
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.3)';
+                e.target.style.transform = 'rotate(90deg)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.2)';
+                e.target.style.transform = 'rotate(0deg)';
               }}
             >
               ×
             </button>
           </div>
 
-          {/* Zone des messages */}
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '15px',
-            background: '#f5f5f5'
-          }}>
+          {/* Zone des messages - Scrollable */}
+          <div 
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: window.innerWidth < 768 ? '12px' : '15px',
+              background: 'linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)',
+              scrollBehavior: 'smooth'
+            }}
+            className="chat-messages-container"
+          >
             {messages.length === 0 ? (
               <div style={{ 
                 textAlign: 'center', 
                 color: '#999', 
-                padding: '20px',
-                fontSize: '14px'
+                padding: window.innerWidth < 768 ? '40px 20px' : '60px 20px',
+                fontSize: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '15px'
               }}>
-                Aucun message pour le moment.<br/>
-                Commencez la discussion !
+                <div style={{ fontSize: '48px', opacity: 0.5 }}>💬</div>
+                <div>
+                  Aucun message pour le moment.<br/>
+                  <strong>Commencez la discussion !</strong>
+                </div>
               </div>
             ) : (
-              messages.map((msg, idx) => (
-                <div key={idx} style={{
-                  marginBottom: '10px',
-                  padding: '10px',
-                  background: 'white',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: '5px',
-                    fontSize: '12px'
+              <>
+                {messages.map((msg, idx) => (
+                  <div key={idx} style={{
+                    marginBottom: '12px',
+                    padding: window.innerWidth < 768 ? '12px' : '10px 12px',
+                    background: 'white',
+                    borderLeft: '4px solid #667eea',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    animation: 'fadeIn 0.3s ease-out',
+                    transition: 'transform 0.2s',
                   }}>
-                    <span style={{ fontWeight: 'bold', color: '#667eea' }}>
-                      Joueur #{msg.playerNumber}
-                    </span>
-                    <span style={{ color: '#999' }}>
-                      {formatTimestamp(msg.timestamp)}
-                    </span>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                      fontSize: '12px',
+                      gap: '10px'
+                    }}>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: '#667eea',
+                        background: 'rgba(102,126,234,0.1)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px'
+                      }}>
+                        🎮 Joueur #{msg.playerNumber}
+                      </span>
+                      <span style={{ color: '#999', fontSize: '11px', flexShrink: 0 }}>
+                        {formatTimestamp(msg.timestamp)}
+                      </span>
+                    </div>
+                    <div style={{ 
+                      color: '#333', 
+                      fontSize: window.innerWidth < 768 ? '15px' : '14px', 
+                      wordWrap: 'break-word',
+                      lineHeight: '1.5',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {msg.message}
+                    </div>
                   </div>
-                  <div style={{ color: '#333', fontSize: '14px', wordWrap: 'break-word' }}>
-                    {msg.message}
-                  </div>
-                </div>
-              ))
+                ))}
+                <div ref={(el) => chatEndRef[0] = el} style={{ height: '1px' }} />
+              </>
             )}
           </div>
 
-          {/* Zone de saisie */}
+          {/* Zone de saisie - Sticky bottom */}
           <form onSubmit={sendMessage} style={{
-            padding: '15px',
+            padding: window.innerWidth < 768 ? '16px' : '15px',
             borderTop: '3px solid #2C5F7F',
             background: '#E8D5B7',
             display: 'flex',
-            gap: '10px'
+            gap: window.innerWidth < 768 ? '8px' : '10px',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)'
           }}>
             <input
               type="text"
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
-              placeholder="Écrivez votre message..."
+              placeholder={window.innerWidth < 768 ? "Message..." : "Écrivez votre message..."}
               maxLength={200}
-              autoFocus
+              autoFocus={window.innerWidth >= 768}
               style={{
                 flex: 1,
-                padding: '12px',
+                padding: window.innerWidth < 768 ? '14px' : '12px',
                 border: '3px solid #2C5F7F',
-                borderRadius: '8px',
-                fontSize: '14px',
+                borderRadius: '10px',
+                fontSize: window.innerWidth < 768 ? '16px' : '14px',
                 outline: 'none',
                 background: 'white',
-                fontFamily: 'Courier Prime, monospace'
+                fontFamily: 'Courier Prime, monospace',
+                transition: 'border-color 0.2s, box-shadow 0.2s'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#2C5F7F'}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.2)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#2C5F7F';
+                e.target.style.boxShadow = 'none';
+              }}
             />
             <button
               type="submit"
+              aria-label="Envoyer le message"
               style={{
-                padding: '12px 24px',
+                padding: window.innerWidth < 768 ? '14px 20px' : '12px 24px',
                 background: currentMessage.trim() 
                   ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                  : '#ccc',
+                  : 'linear-gradient(135deg, #ccc 0%, #aaa 100%)',
                 border: '3px solid #2C5F7F',
-                borderRadius: '8px',
+                borderRadius: '10px',
                 color: 'white',
                 fontWeight: 'bold',
                 cursor: currentMessage.trim() ? 'pointer' : 'not-allowed',
-                fontSize: '18px',
-                transition: 'all 0.2s'
+                fontSize: window.innerWidth < 768 ? '20px' : '18px',
+                transition: 'all 0.2s',
+                boxShadow: currentMessage.trim() ? '0 4px 12px rgba(102,126,234,0.4)' : 'none',
+                minWidth: window.innerWidth < 768 ? '56px' : '50px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               disabled={!currentMessage.trim()}
               onMouseEnter={(e) => {
-                if (currentMessage.trim()) e.target.style.transform = 'scale(1.05)';
+                if (currentMessage.trim()) {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(102,126,234,0.5)';
+                }
               }}
               onMouseLeave={(e) => {
                 e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = currentMessage.trim() ? '0 4px 12px rgba(102,126,234,0.4)' : 'none';
               }}
             >
               ➤

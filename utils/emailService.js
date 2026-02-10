@@ -40,7 +40,11 @@ const sendVerificationEmail = async (user, token) => {
   const verificationUrl = `${process.env.APP_URL || 'https://jeu-bleu-rouge.onrender.com'}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
+    from: {
+      name: 'Jeu Bleu Rouge 🎮',
+      address: process.env.EMAIL_USER
+    },
+    replyTo: process.env.EMAIL_USER,
     to: user.email,
     subject: '🎮 Confirmez votre adresse email - Jeu Bleu Rouge',
     html: `
@@ -167,7 +171,11 @@ const sendWelcomeEmail = async (user) => {
   const transporter = createTransporter();
   
   const mailOptions = {
-    from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
+    from: {
+      name: 'Jeu Bleu Rouge 🎮',
+      address: process.env.EMAIL_USER
+    },
+    replyTo: process.env.EMAIL_USER,
     to: user.email,
     subject: '🎉 Votre compte est activé !',
     html: `

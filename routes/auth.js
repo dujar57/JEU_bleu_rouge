@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const rateLimit = require('express-rate-limit');
-// const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
+const { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 // Rate limiting strict pour l'authentification
 const authLimiter = rateLimit({
@@ -16,6 +16,9 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
+// Blacklist de tokens (en production, utiliser Redis)
+const tokenBlacklist = new Set();
+
 // Middleware pour vérifier le token
 const auth = async (req, res, next) => {
   try {
@@ -25,6 +28,12 @@ const auth = async (req, res, next) => {
     }
     
     const token = authHeader.replace('Bearer ', '');
+    
+    // Vérifier si le token est dans la blacklist
+    if (tokenBlacklist.has(token)) {
+      return res.status(401).json({ error: 'Token invalidé. Veuillez vous reconnecter.' });
+    }
+    
     if (token.length > 500) { // Sécurité : limite la taille du token
       return res.status(401).json({ error: 'Token invalide' });
     }
@@ -95,8 +104,18 @@ router.post('/register', authLimiter, [
       });
     }
     
+    // Générer le token de vérification
+    const verificationToken = generateVerificationToken();
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    
     // Créer l'utilisateur
-    const user = new User({ username, email, password });
+    const user = new User({ 
+      username, 
+      email, 
+      password,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: tokenExpiry
+    });
     
     // Générer le token de vérification email
     // const verificationToken = generateVerificationToken();
@@ -106,7 +125,13 @@ router.post('/register', authLimiter, [
     await user.save();
     
     // Envoyer l'email de vérification
-    // const emailSent = await sendVerificationEmail(user, verificationToken);
+    try {
+      await sendVerificationEmail(user, verificationToken);
+      console.log(`✅ Email de vérification envoyé à ${email}`);
+    } catch (emailError) {
+      console.error('❌ Erreur envoi email:', emailError);
+      // On continue même si l'email échoue
+    }
 
     // Créer le token JWT
     const jwtSecret = process.env.JWT_SECRET;
@@ -159,15 +184,17 @@ router.post('/login', authLimiter, [
     
     const { email, password } = req.body;
     
-    // Trouver l'utilisateur
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
-    }
+    // Protection contre timing attack - temps constant
+    const user = await User.findOne({ email }).select('+password');
     
-    // Vérifier le mot de passe
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    // Exécuter comparePassword même si user n'existe pas (timing attack prevention)
+    const dummyHash = '$2a$10$YourDummyHashHere';
+    const isMatch = user 
+      ? await user.comparePassword(password)
+      : await require('bcryptjs').compare(password, dummyHash);
+    
+    if (!user || !isMatch) {
+      // Message générique pour ne pas révéler si l'email existe
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
     
@@ -219,9 +246,24 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
-// Déconnexion
+// Déconnexion sécurisée
 router.post('/logout', auth, async (req, res) => {
-  res.json({ message: 'Déconnexion réussie' });
+  try {
+    // Ajouter le token à la blacklist
+    const token = req.token;
+    tokenBlacklist.add(token);
+    
+    // Nettoyer les vieux tokens après 7 jours (correspond à l'expiration JWT)
+    setTimeout(() => {
+      tokenBlacklist.delete(token);
+    }, 7 * 24 * 60 * 60 * 1000);
+    
+    console.log(`🚪 Utilisateur ${req.user.username} déconnecté`);
+    res.json({ message: 'Déconnexion réussie' });
+  } catch (error) {
+    console.error('Erreur logout:', error);
+    res.status(500).json({ error: 'Erreur lors de la déconnexion' });
+  }
 });
 
 // Vérifier l'email avec le token
@@ -252,7 +294,12 @@ router.get('/verify-email', async (req, res) => {
     await user.save();
     
     // Envoyer l'email de bienvenue
-    // await sendWelcomeEmail(user);
+    try {
+      await sendWelcomeEmail(user);
+      console.log(`🎉 Email de bienvenue envoyé à ${user.email}`);
+    } catch (emailError) {
+      console.error('Erreur envoi email bienvenue:', emailError);
+    }
     
     res.json({ 
       message: 'Email vérifié avec succès ! Vous pouvez maintenant vous connecter.',
@@ -332,5 +379,136 @@ router.get('/profile', auth, async (req, res) => {
     res.status(500).json({ error: 'Erreur lors de la récupération du profil' });
   }
 });
+
+// PUT /update-profile - Modifier les informations du profil
+router.put('/update-profile', 
+  authLimiter,
+  auth,
+  [
+    body('username')
+      .optional()
+      .trim()
+      .isLength({ min: 3, max: 20 })
+      .withMessage('Le pseudo doit contenir entre 3 et 20 caractères')
+      .matches(/^[a-zA-Z0-9_-]+$/)
+      .withMessage('Le pseudo ne peut contenir que des lettres, chiffres, - et _'),
+    body('email')
+      .optional()
+      .trim()
+      .isEmail()
+      .withMessage('Email invalide')
+      .normalizeEmail(),
+    body('currentPassword')
+      .optional()
+      .isLength({ min: 1 })
+      .withMessage('Mot de passe actuel requis pour changer de mot de passe'),
+    body('newPassword')
+      .optional()
+      .isLength({ min: 6 })
+      .withMessage('Le nouveau mot de passe doit contenir au moins 6 caractères')
+  ],
+  async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      // Validation
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { username, email, currentPassword, newPassword } = req.body;
+      const user = req.user;
+      let updated = false;
+      let emailChanged = false;
+
+      // Vérifier qu'au moins un champ est fourni
+      if (!username && !email && !newPassword) {
+        return res.status(400).json({ error: 'Aucune modification fournie' });
+      }
+
+      // Modifier le username
+      if (username && username !== user.username) {
+        // Vérifier si le username est déjà pris
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+          return res.status(400).json({ error: 'Ce pseudo est déjà utilisé' });
+        }
+        user.username = username;
+        updated = true;
+      }
+
+      // Modifier l'email
+      if (email && email !== user.email) {
+        // Vérifier si l'email est déjà utilisé
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+        }
+        user.email = email;
+        user.emailVerified = false; // Réinitialiser la vérification
+        emailChanged = true;
+        updated = true;
+        
+        // Envoyer un nouvel email de vérification
+        try {
+          const verificationToken = generateVerificationToken();
+          user.emailVerificationToken = verificationToken;
+          user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24h
+          await sendVerificationEmail(user, verificationToken);
+        } catch (emailError) {
+          console.error('Erreur envoi email vérification:', emailError);
+        }
+      }
+
+      // Modifier le mot de passe
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Le mot de passe actuel est requis' });
+        }
+
+        // Vérifier le mot de passe actuel
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+          // Protection timing attack
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return res.status(400).json({ error: 'Mot de passe actuel incorrect' });
+        }
+
+        user.password = newPassword; // Le hachage est fait automatiquement par le pre-save hook
+        updated = true;
+      }
+
+      if (!updated) {
+        return res.status(400).json({ error: 'Aucun changement détecté' });
+      }
+
+      // Sauvegarder les modifications
+      await user.save();
+
+      // Protection timing attack
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+      }
+
+      console.log(`✅ Profil mis à jour pour ${user.username}`);
+
+      res.json({ 
+        message: 'Profil mis à jour avec succès',
+        emailChanged: emailChanged ? 'Un email de vérification a été envoyé à votre nouvelle adresse' : undefined,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          emailVerified: user.emailVerified
+        }
+      });
+    } catch (error) {
+      console.error('Erreur mise à jour profil:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du profil' });
+    }
+  }
+);
 
 module.exports = router;
