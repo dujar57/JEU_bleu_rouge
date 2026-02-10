@@ -107,6 +107,54 @@ function Home({ createGame, joinGame }) {
         )}
 
         <div className="container">
+        {/* Bandeau de bienvenue si connecté */}
+        {user && (
+          <div style={{
+            position: 'relative',
+            marginBottom: '30px',
+            padding: '20px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            border: '6px solid #2C5F7F',
+            borderRadius: '15px',
+            boxShadow: '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)',
+            textAlign: 'center',
+            animation: 'pulse 2s ease-in-out infinite'
+          }}>
+            <div style={{
+              fontSize: '28px',
+              fontWeight: 'bold',
+              color: 'white',
+              fontFamily: 'Archivo Black',
+              textShadow: '0 0 10px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3)',
+              marginBottom: '8px',
+              letterSpacing: '2px'
+            }}>
+              ⚡ CONNECTÉ ⚡
+            </div>
+            <div style={{
+              fontSize: '20px',
+              color: '#fff',
+              fontFamily: 'Anton',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              letterSpacing: '1px'
+            }}>
+              🎮 JOUEUR : <span style={{ 
+                color: '#00ff88',
+                fontWeight: 'bold',
+                textShadow: '0 0 10px #00ff88, 0 2px 4px rgba(0,0,0,0.5)'
+              }}>{user.username.toUpperCase()}</span> 🎮
+            </div>
+            <div style={{
+              marginTop: '10px',
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.8)',
+              fontFamily: 'Courier Prime'
+            }}>
+              🏆 {user.gamesPlayed || 0} parties • {user.gamesWon || 0} victoires
+            </div>
+          </div>
+        )}
+        
         <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
         <div className="logo">
           <h1>
