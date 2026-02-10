@@ -108,7 +108,9 @@ function Home({ createGame, joinGame, onViewProfile }) {
               setShowAccountMenu(false);
               // Auto-remplir les champs et rejoindre directement
               if (user.username) {
-                joinGame(gameCode, user.username, 'Reconnexion');
+                setPseudo(user.username);
+                setMode('join');
+                setCode(gameCode);
               }
             }}
           />

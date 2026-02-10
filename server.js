@@ -441,10 +441,8 @@ async function saveMatchHistory(gameCode) {
         user.gamesWon = (user.gamesWon || 0) + 1;
       }
       
-      // Réinitialiser currentGameId si c'est cette partie
-      if (user.currentGameId === gameCode) {
-        user.currentGameId = null;
-      }
+      // Retirer la partie des parties en cours
+      user.currentGames = user.currentGames.filter(g => g.gameId !== gameCode);
       
       user.lastActivityAt = new Date();
       
@@ -812,11 +810,21 @@ io.on('connection', (socket) => {
         await gameDoc.save();
         console.log(`💾 Partie ${gameCode} sauvegardée pour l'utilisateur ${userId}`);
         
-        // Mettre à jour le currentGameId de l'utilisateur
-        await User.findByIdAndUpdate(userId, {
-          currentGameId: gameCode,
-          lastActivityAt: new Date()
-        });
+        // Ajouter la partie aux parties en cours de l'utilisateur
+        const user = await User.findById(userId);
+        if (user) {
+          // Vérifier si la partie n'est pas déjà dans la liste
+          const gameExists = user.currentGames.some(g => g.gameId === gameCode);
+          if (!gameExists) {
+            user.currentGames.push({
+              gameId: gameCode,
+              joinedAt: new Date(),
+              lastActivityAt: new Date()
+            });
+            user.lastActivityAt = new Date();
+            await user.save();
+          }
+        }
       } catch (error) {
         console.error('Erreur lors de la sauvegarde de la partie:', error);
       }
@@ -905,18 +913,26 @@ io.on('connection', (socket) => {
 
     socket.emit('game_joined', { gameCode: codeValidation.value });
     
-    // Mettre à jour le currentGameId si l'utilisateur est connecté
+    // Ajouter la partie aux parties en cours si l'utilisateur est connecté
     if (mongoConnected) {
       try {
         const user = await User.findOne({ username: pseudoValidation.value });
         if (user) {
-          user.currentGameId = codeValidation.value;
-          user.lastActivityAt = new Date();
-          await user.save();
-          console.log(`📝 currentGameId mis à jour pour ${pseudoValidation.value}`);
+          // Vérifier si la partie n'est pas déjà dans la liste
+          const gameExists = user.currentGames.some(g => g.gameId === codeValidation.value);
+          if (!gameExists) {
+            user.currentGames.push({
+              gameId: codeValidation.value,
+              joinedAt: new Date(),
+              lastActivityAt: new Date()
+            });
+            user.lastActivityAt = new Date();
+            await user.save();
+            console.log(`📝 Partie ajoutée aux parties en cours pour ${pseudoValidation.value}`);
+          }
         }
       } catch (error) {
-        console.error('Erreur mise à jour currentGameId:', error);
+        console.error('Erreur mise à jour currentGames:', error);
       }
     }
     

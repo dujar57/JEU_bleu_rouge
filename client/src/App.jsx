@@ -222,6 +222,10 @@ function App() {
         <ProfilePage 
           user={user}
           onBack={() => setScreen('HOME')}
+          onRejoinGame={(gameCode) => {
+            setScreen('HOME');
+            // Le rejoin sera géré par Home
+          }}
         />
       )}
 

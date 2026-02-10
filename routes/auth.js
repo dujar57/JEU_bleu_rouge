@@ -306,15 +306,13 @@ router.get('/profile', auth, async (req, res) => {
       playerCount: match.playerCount
     }));
     
-    // Vérifier s'il y a une partie en cours
-    let currentMatch = null;
-    if (user.currentGameId) {
-      currentMatch = {
-        gameId: user.currentGameId,
-        joinUrl: `/game/${user.currentGameId}`,
-        canRejoin: true
-      };
-    }
+    // Récupérer toutes les parties en cours
+    const currentGames = user.currentGames.map(game => ({
+      gameId: game.gameId,
+      joinedAt: game.joinedAt,
+      lastActivityAt: game.lastActivityAt,
+      canRejoin: true
+    }));
     
     res.json({
       user: {
@@ -324,11 +322,10 @@ router.get('/profile', auth, async (req, res) => {
         emailVerified: user.emailVerified,
         gamesPlayed: user.gamesPlayed,
         gamesWon: user.gamesWon,
-        createdAt: user.createdAt,
-        currentGameId: user.currentGameId
+        createdAt: user.createdAt
       },
       matchHistory,
-      currentMatch
+      currentGames
     });
   } catch (error) {
     console.error('Erreur profil:', error);

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 
-export default function ProfilePage({ user, onBack }) {
+export default function ProfilePage({ user, onBack, onRejoinGame }) {
   const [matchHistory, setMatchHistory] = useState([]);
+  const [currentGames, setCurrentGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalGames: 0,
@@ -31,6 +32,7 @@ export default function ProfilePage({ user, onBack }) {
       if (response.ok) {
         const data = await response.json();
         setMatchHistory(data.matchHistory || []);
+        setCurrentGames(data.currentGames || []);
         
         // Calculer les statistiques détaillées
         const history = data.matchHistory || [];
@@ -238,6 +240,124 @@ export default function ProfilePage({ user, onBack }) {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Section Parties en cours */}
+            <div style={{
+              background: 'linear-gradient(135deg, #E8D5B7 0%, #d4c5a7 100%)',
+              border: '8px solid #2C5F7F',
+              borderRadius: '20px',
+              boxShadow: '0 0 0 4px #E8D5B7, 0 15px 40px rgba(0,0,0,0.5)',
+              padding: '30px',
+              marginBottom: '30px'
+            }}>
+              <h2 style={{
+                fontSize: '32px',
+                fontFamily: 'Archivo Black',
+                color: '#2C5F7F',
+                marginBottom: '25px',
+                textAlign: 'center'
+              }}>
+                🎮 PARTIES EN COURS
+              </h2>
+
+              {currentGames.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: '#666',
+                  fontSize: '18px'
+                }}>
+                  <div style={{ fontSize: '64px', marginBottom: '20px' }}>⏸️</div>
+                  <div style={{ fontFamily: 'Archivo Black' }}>Aucune partie en cours</div>
+                  <div style={{ fontSize: '14px', marginTop: '10px' }}>Créez ou rejoignez une partie !</div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {currentGames.map((game, index) => (
+                    <div key={index} style={{
+                      background: 'linear-gradient(135deg, #fff9e6 0%, #ffe5b4 100%)',
+                      border: '4px solid #ff9800',
+                      borderRadius: '15px',
+                      padding: '20px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-5px)';
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,152,0,0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                    }}
+                    >
+                      <div style={{
+                        fontSize: '36px',
+                        textAlign: 'center',
+                        marginBottom: '15px'
+                      }}>
+                        🎮
+                      </div>
+                      
+                      <div style={{
+                        fontSize: '28px',
+                        fontFamily: 'Courier Prime',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        color: '#2C5F7F',
+                        marginBottom: '15px',
+                        background: 'rgba(255,255,255,0.7)',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '2px solid #2C5F7F',
+                        letterSpacing: '4px'
+                      }}>
+                        {game.gameId}
+                      </div>
+
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#666',
+                        marginBottom: '12px',
+                        textAlign: 'center'
+                      }}>
+                        📅 Rejoint le {new Date(game.joinedAt).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (onRejoinGame) {
+                            onRejoinGame(game.gameId);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                          border: '3px solid #2C5F7F',
+                          borderRadius: '8px',
+                          color: 'white',
+                          fontFamily: 'Archivo Black',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                      >
+                        ▶️ REJOINDRE
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Historique détaillé */}

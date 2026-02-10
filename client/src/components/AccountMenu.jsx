@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [matchHistory, setMatchHistory] = useState([]);
-  const [currentMatch, setCurrentMatch] = useState(null);
+  const [currentGames, setCurrentGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(true);
 
@@ -26,7 +26,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
       if (response.ok) {
         const data = await response.json();
         setMatchHistory(data.matchHistory || []);
-        setCurrentMatch(data.currentMatch || null);
+        setCurrentGames(data.currentGames || []);
       }
     } catch (error) {
       console.error('Erreur chargement profil:', error);
@@ -282,57 +282,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
 
               {activeTab === 'current' && (
                 <div>
-                  {currentMatch ? (
-                    <div style={{
-                      background: 'white',
-                      padding: '20px',
-                      borderRadius: '10px',
-                      border: '3px solid #2C5F7F'
-                    }}>
-                      <h3 style={{ marginTop: 0, color: '#2C5F7F' }}>🎮 Match en cours</h3>
-                      <div style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        padding: '15px',
-                        borderRadius: '8px',
-                        marginBottom: '15px',
-                        color: 'white',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ fontSize: '14px', marginBottom: '8px', opacity: 0.9 }}>Code de partie</div>
-                        <div style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '8px', fontFamily: 'Courier Prime' }}>
-                          {currentMatch.gameId}
-                        </div>
-                      </div>
-                      <div style={{ marginBottom: '15px' }}>
-                        <p style={{ fontSize: '14px', color: '#666' }}>
-                          💡 Vous pouvez rejoindre cette partie à tout moment !
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (onRejoinGame) {
-                            onRejoinGame(currentMatch.gameId);
-                          }
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '15px',
-                          background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
-                          border: '3px solid #2C5F7F',
-                          borderRadius: '8px',
-                          color: 'white',
-                          fontFamily: 'Archivo Black',
-                          fontSize: '16px',
-                          cursor: 'pointer',
-                          transition: 'transform 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                      >
-                        🎮 REJOINDRE LA PARTIE
-                      </button>
-                    </div>
-                  ) : (
+                  {currentGames.length === 0 ? (
                     <div style={{
                       textAlign: 'center',
                       padding: '40px',
@@ -342,8 +292,76 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
                       border: '3px solid #2C5F7F'
                     }}>
                       <p style={{ fontSize: '48px', margin: '0' }}>⏸️</p>
-                      <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>Aucun match en cours</p>
+                      <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>Aucune partie en cours</p>
                       <p style={{ fontSize: '14px', color: '#999' }}>Créez ou rejoignez une partie pour commencer à jouer !</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {currentGames.map((game, index) => (
+                        <div key={index} style={{
+                          background: 'linear-gradient(135deg, #fff9e6 0%, #ffe5b4 100%)',
+                          padding: '15px',
+                          borderRadius: '10px',
+                          border: '3px solid #ff9800',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '12px'
+                          }}>
+                            <div style={{
+                              fontSize: '24px',
+                              fontFamily: 'Courier Prime',
+                              fontWeight: 'bold',
+                              color: '#2C5F7F',
+                              background: 'rgba(255,255,255,0.7)',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: '2px solid #2C5F7F',
+                              letterSpacing: '3px'
+                            }}>
+                              {game.gameId}
+                            </div>
+                            <div style={{ fontSize: '28px' }}>🎮</div>
+                          </div>
+                          
+                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+                            📅 Rejoint le {new Date(game.joinedAt).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              if (onRejoinGame) {
+                                onRejoinGame(game.gameId);
+                                onClose();
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                              border: '3px solid #2C5F7F',
+                              borderRadius: '8px',
+                              color: 'white',
+                              fontFamily: 'Archivo Black',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              transition: 'transform 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                          >
+                            ▶️ REJOINDRE LA PARTIE
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

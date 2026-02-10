@@ -54,10 +54,14 @@ const userSchema = new mongoose.Schema({
     duration: Number, // en minutes
     playerCount: Number
   }],
-  currentGameId: {
-    type: String,
-    default: null
-  },
+  currentGames: [{
+    gameId: String,
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    },
+    lastActivityAt: Date
+  }],
   lastActivityAt: {
     type: Date,
     default: Date.now
