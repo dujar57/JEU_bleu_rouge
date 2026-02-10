@@ -124,9 +124,9 @@ const {
   doubleCsrfProtection, // Middleware de protection
 } = doubleCsrf({
   getSecret: () => process.env.JWT_SECRET, // Utilise le même secret que JWT
-  cookieName: '__Host-psifi.x-csrf-token',
+  cookieName: 'csrf-token', // Simplifié pour éviter les problèmes __Host-
   cookieOptions: {
-    sameSite: 'strict',
+    sameSite: 'lax', // Changé de strict à lax pour plus de compatibilité
     path: '/',
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true
@@ -144,9 +144,9 @@ app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken });
 });
 
-// Appliquer la protection CSRF sur les routes sensibles
-app.use('/api/auth', doubleCsrfProtection);
-app.use('/api/game', doubleCsrfProtection);
+// ⚠️ CSRF TEMPORAIREMENT DÉSACTIVÉ - À réactiver après tests
+// app.use('/api/auth', doubleCsrfProtection);
+// app.use('/api/game', doubleCsrfProtection);
 
 // Blacklist de tokens pour logout sécurisé
 const tokenBlacklist = new Set();
