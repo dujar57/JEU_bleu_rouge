@@ -5,7 +5,7 @@ import Login from './Login';
 import Register from './Register';
 import AccountMenu from './AccountMenu';
 
-function Home({ createGame, joinGame }) {
+function Home({ createGame, joinGame, onViewProfile }) {
   const [mode, setMode] = useState(''); // 'create', 'join', 'login', ou 'register'
   const [pseudo, setPseudo] = useState('');
   const [realLifeInfo, setRealLifeInfo] = useState('');
@@ -115,19 +115,32 @@ function Home({ createGame, joinGame }) {
         )}
 
         <div className="container">
-        {/* Bandeau de bienvenue si connecté */}
+        {/* Bandeau de bienvenue si connecté - CLIQUABLE */}
         {user && (
-          <div style={{
-            position: 'relative',
-            marginBottom: '30px',
-            padding: '20px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            border: '6px solid #2C5F7F',
-            borderRadius: '15px',
-            boxShadow: '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)',
-            textAlign: 'center',
-            animation: 'pulse 2s ease-in-out infinite'
-          }}>
+          <div 
+            onClick={onViewProfile}
+            style={{
+              position: 'relative',
+              marginBottom: '30px',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: '6px solid #2C5F7F',
+              borderRadius: '15px',
+              boxShadow: '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)',
+              textAlign: 'center',
+              animation: 'pulse 2s ease-in-out infinite',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px #E8D5B7, 0 15px 40px rgba(102,126,234,0.5), inset 0 2px 8px rgba(255,255,255,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)';
+            }}
+          >
             <div style={{
               fontSize: '28px',
               fontWeight: 'bold',
@@ -159,6 +172,15 @@ function Home({ createGame, joinGame }) {
               fontFamily: 'Courier Prime'
             }}>
               🏆 {user.gamesPlayed || 0} parties • {user.gamesWon || 0} victoires
+            </div>
+            <div style={{
+              marginTop: '12px',
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.9)',
+              fontFamily: 'Archivo Black',
+              letterSpacing: '1px'
+            }}>
+              👆 CLIQUEZ POUR VOIR VOTRE PROFIL DÉTAILLÉ
             </div>
           </div>
         )}

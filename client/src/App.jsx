@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
 import GameEnded from './components/GameEnded';
+import ProfilePage from './components/ProfilePage';
 
 // URL UNIQUE - RENDER UNIQUEMENT
 const SOCKET_URL = 'https://jeu-bleu-rouge.onrender.com';
@@ -34,7 +35,7 @@ socket.on('connect_timeout', () => {
 });
 
 function App() {
-  const [screen, setScreen] = useState('HOME'); // HOME, LOBBY, GAME
+  const [screen, setScreen] = useState('HOME'); // HOME, LOBBY, GAME, PROFILE
   const [gameCode, setGameCode] = useState('');
   const [pseudo, setPseudo] = useState('');
   const [myRole, setMyRole] = useState(null);
@@ -43,8 +44,16 @@ function App() {
   const [endGameData, setEndGameData] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Charger l'utilisateur depuis localStorage
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+
     // Gestion de la connexion Socket.io
     socket.on('connect', () => {
       console.log('✅ Connecté au serveur');
@@ -202,7 +211,18 @@ function App() {
       )}
 
       {screen === 'HOME' && (
-        <Home createGame={createGame} joinGame={joinGame} />
+        <Home 
+          createGame={createGame} 
+          joinGame={joinGame}
+          onViewProfile={() => setScreen('PROFILE')}
+        />
+      )}
+
+      {screen === 'PROFILE' && (
+        <ProfilePage 
+          user={user}
+          onBack={() => setScreen('HOME')}
+        />
       )}
 
       {screen === 'LOBBY' && (
