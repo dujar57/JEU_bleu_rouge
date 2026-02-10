@@ -290,51 +290,30 @@ router.post('/resend-verification', auth, async (req, res) => {
 });
 
 // GET /profile - Récupérer le profil utilisateur avec historique
-router.get('/profile', verifyToken, async (req, res) => {
+router.get('/profile', auth, async (req, res) => {
   try {
     const user = req.user;
     
-    // Récupérer l'historique des parties depuis MongoDB (si connecté)
-    let matchHistory = [];
-    let currentMatch = null;
+    // Utiliser l'historique directement depuis le modèle User
+    const matchHistory = user.matchHistory.slice(-20).reverse().map(match => ({
+      gameId: match.gameId,
+      won: match.won,
+      team: match.team,
+      role: match.role,
+      isTraitor: match.isTraitor,
+      date: match.playedAt,
+      duration: match.duration,
+      playerCount: match.playerCount
+    }));
     
-    try {
-      const Game = require('../models/Game');
-      
-      // Récupérer toutes les parties terminées
-      const completedGames = await Game.find({
-        userId: user._id,
-        isGameEnded: true
-      }).sort({ updatedAt: -1 }).limit(20);
-      
-      matchHistory = completedGames.map(game => ({
-        gameId: game.gameId,
-        won: game.winner && game.players.some(p => 
-          p.pseudo === user.username && 
-          ((game.winner === 'BLEU' && p.team === 'bleu') || 
-           (game.winner === 'ROUGE' && p.team === 'rouge') ||
-           (game.winner === 'AMOUREUX' && p.isLover))
-        ),
-        team: game.players.find(p => p.pseudo === user.username)?.team || 'unknown',
-        date: game.updatedAt
-      }));
-      
-      // Récupérer la partie en cours (si elle existe)
-      const ongoingGame = await Game.findOne({
-        userId: user._id,
-        isGameEnded: false
-      });
-      
-      if (ongoingGame) {
-        const timeRemaining = ongoingGame.endTime - Date.now();
-        currentMatch = {
-          gameId: ongoingGame.gameId,
-          playerCount: ongoingGame.players.length,
-          timeRemaining: timeRemaining > 0 ? `${Math.floor(timeRemaining / 60000)} min` : 'Terminé'
-        };
-      }
-    } catch (dbError) {
-      console.log('MongoDB non connecté, historique non disponible');
+    // Vérifier s'il y a une partie en cours
+    let currentMatch = null;
+    if (user.currentGameId) {
+      currentMatch = {
+        gameId: user.currentGameId,
+        joinUrl: `/game/${user.currentGameId}`,
+        canRejoin: true
+      };
     }
     
     res.json({
@@ -345,7 +324,8 @@ router.get('/profile', verifyToken, async (req, res) => {
         emailVerified: user.emailVerified,
         gamesPlayed: user.gamesPlayed,
         gamesWon: user.gamesWon,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        currentGameId: user.currentGameId
       },
       matchHistory,
       currentMatch

@@ -535,3 +535,24 @@ button.secondary:hover {
   text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
   transform: scale(1.15);
 }
+
+/* Animations pour les notifications */
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 
-export default function AccountMenu({ user, onClose, onLogout }) {
+export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [matchHistory, setMatchHistory] = useState([]);
   const [currentMatch, setCurrentMatch] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -146,6 +147,7 @@ export default function AccountMenu({ user, onClose, onLogout }) {
                     <h3 style={{ marginTop: 0, color: '#2C5F7F' }}>Informations</h3>
                     <p><strong>👤 Pseudo:</strong> {user?.username || 'N/A'}</p>
                     <p><strong>📧 Email:</strong> {user?.email || 'N/A'}</p>
+                    <p><strong>✅ Email vérifié:</strong> {user?.emailVerified ? '✅ Oui' : '❌ Non'}</p>
                     <p><strong>🎮 Parties jouées:</strong> {user?.gamesPlayed || 0}</p>
                     <p><strong>🏆 Victoires:</strong> {user?.gamesWon || 0}</p>
                     <p><strong>📊 Taux de victoire:</strong> {
@@ -153,6 +155,32 @@ export default function AccountMenu({ user, onClose, onLogout }) {
                         ? `${Math.round((user?.gamesWon / user?.gamesPlayed) * 100)}%`
                         : '0%'
                     }</p>
+                    <p><strong>📅 Membre depuis:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                  </div>
+
+                  <div style={{
+                    background: 'white',
+                    padding: '15px',
+                    borderRadius: '10px',
+                    border: '3px solid #2C5F7F',
+                    marginBottom: '15px'
+                  }}>
+                    <h3 style={{ marginTop: 0, color: '#2C5F7F', fontSize: '16px' }}>⚙️ Préférences</h3>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={reminderEnabled}
+                        onChange={(e) => setReminderEnabled(e.target.checked)}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <span>🔔 Recevoir des rappels de vote</span>
+                    </label>
                   </div>
 
                   <button
@@ -186,21 +214,66 @@ export default function AccountMenu({ user, onClose, onLogout }) {
                       border: '3px solid #2C5F7F'
                     }}>
                       <p style={{ fontSize: '48px', margin: '0' }}>🎮</p>
-                      <p>Aucune partie jouée pour le moment</p>
+                      <p style={{ fontSize: '18px', fontWeight: 'bold' }}>Aucune partie jouée pour le moment</p>
+                      <p style={{ fontSize: '14px', color: '#999' }}>Votre historique apparaîtra ici</p>
                     </div>
                   ) : (
                     matchHistory.map((match, index) => (
                       <div key={index} style={{
-                        background: 'white',
+                        background: match.won 
+                          ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
+                          : 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
                         padding: '15px',
                         borderRadius: '10px',
-                        border: '3px solid #2C5F7F',
-                        marginBottom: '10px'
+                        border: `3px solid ${match.won ? '#4caf50' : '#f44336'}`,
+                        marginBottom: '10px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}>
-                        <p><strong>🎯 Code:</strong> {match.gameId}</p>
-                        <p><strong>🏆 Résultat:</strong> {match.won ? '✅ VICTOIRE' : '❌ DÉFAITE'}</p>
-                        <p><strong>👥 Équipe:</strong> {match.team === 'bleu' ? '🔵 BLEU' : '🔴 ROUGE'}</p>
-                        <p><strong>📅 Date:</strong> {new Date(match.date).toLocaleDateString()}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ 
+                            fontSize: '20px', 
+                            fontWeight: 'bold', 
+                            color: match.won ? '#2e7d32' : '#c62828' 
+                          }}>
+                            {match.won ? '🏆 VICTOIRE' : '💀 DÉFAITE'}
+                          </div>
+                          <div style={{ 
+                            fontSize: '18px', 
+                            fontFamily: 'Courier Prime', 
+                            fontWeight: 'bold',
+                            color: '#666'
+                          }}>
+                            {match.gameId}
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '14px' }}>
+                          <p style={{ margin: '4px 0' }}><strong>👥 Équipe:</strong> {match.team === 'bleu' ? '🔵 BLEU' : '🔴 ROUGE'}</p>
+                          <p style={{ margin: '4px 0' }}><strong>🎭 Rôle:</strong> {match.role || 'N/A'}</p>
+                          <p style={{ margin: '4px 0' }}><strong>👤 Joueurs:</strong> {match.playerCount || 'N/A'}</p>
+                          <p style={{ margin: '4px 0' }}><strong>⏱️ Durée:</strong> {match.duration ? `${match.duration} min` : 'N/A'}</p>
+                        </div>
+                        {match.isTraitor && (
+                          <div style={{ 
+                            marginTop: '8px', 
+                            padding: '6px', 
+                            background: 'rgba(139, 0, 255, 0.1)', 
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            color: '#8B00FF',
+                            fontWeight: 'bold'
+                          }}>
+                            🎭 TRAÎTRE
+                          </div>
+                        )}
+                        <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666', textAlign: 'right' }}>
+                          📅 {new Date(match.date).toLocaleDateString('fr-FR', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
                       </div>
                     ))
                   )}
@@ -216,26 +289,45 @@ export default function AccountMenu({ user, onClose, onLogout }) {
                       borderRadius: '10px',
                       border: '3px solid #2C5F7F'
                     }}>
-                      <h3 style={{ marginTop: 0, color: '#2C5F7F' }}>Match en cours</h3>
-                      <p><strong>🎯 Code:</strong> {currentMatch.gameId}</p>
-                      <p><strong>👥 Joueurs:</strong> {currentMatch.playerCount}</p>
-                      <p><strong>⏱️ Temps restant:</strong> {currentMatch.timeRemaining}</p>
+                      <h3 style={{ marginTop: 0, color: '#2C5F7F' }}>🎮 Match en cours</h3>
+                      <div style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        marginBottom: '15px',
+                        color: 'white',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: '14px', marginBottom: '8px', opacity: 0.9 }}>Code de partie</div>
+                        <div style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '8px', fontFamily: 'Courier Prime' }}>
+                          {currentMatch.gameId}
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: '15px' }}>
+                        <p style={{ fontSize: '14px', color: '#666' }}>
+                          💡 Vous pouvez rejoindre cette partie à tout moment !
+                        </p>
+                      </div>
                       <button
                         onClick={() => {
-                          // Rejoin match logic
-                          onClose();
+                          if (onRejoinGame) {
+                            onRejoinGame(currentMatch.gameId);
+                          }
                         }}
                         style={{
                           width: '100%',
-                          marginTop: '15px',
-                          padding: '12px',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          padding: '15px',
+                          background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
                           border: '3px solid #2C5F7F',
                           borderRadius: '8px',
                           color: 'white',
                           fontFamily: 'Archivo Black',
-                          cursor: 'pointer'
+                          fontSize: '16px',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s'
                         }}
+                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
                       >
                         🎮 REJOINDRE LA PARTIE
                       </button>
@@ -250,7 +342,8 @@ export default function AccountMenu({ user, onClose, onLogout }) {
                       border: '3px solid #2C5F7F'
                     }}>
                       <p style={{ fontSize: '48px', margin: '0' }}>⏸️</p>
-                      <p>Aucun match en cours</p>
+                      <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>Aucun match en cours</p>
+                      <p style={{ fontSize: '14px', color: '#999' }}>Créez ou rejoignez une partie pour commencer à jouer !</p>
                     </div>
                   )}
                 </div>

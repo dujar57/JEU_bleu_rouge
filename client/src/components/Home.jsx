@@ -103,6 +103,14 @@ function Home({ createGame, joinGame }) {
             user={user}
             onClose={() => setShowAccountMenu(false)}
             onLogout={handleLogout}
+            onRejoinGame={(gameCode) => {
+              setCode(gameCode);
+              setShowAccountMenu(false);
+              // Auto-remplir les champs et rejoindre directement
+              if (user.username) {
+                joinGame(gameCode, user.username, 'Reconnexion');
+              }
+            }}
           />
         )}
 

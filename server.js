@@ -339,6 +339,9 @@ async function endGameByTimeout(gameCode) {
     }
   }
   
+  // Sauvegarder l'historique pour tous les joueurs
+  await saveMatchHistory(gameCode);
+  
   updateRoom(gameCode);
 }
 
@@ -385,7 +388,77 @@ async function endGameWithWinner(gameCode, victory) {
     }
   }
   
+  // Sauvegarder l'historique pour tous les joueurs
+  await saveMatchHistory(gameCode);
+  
   updateRoom(gameCode);
+}
+
+// Fonction pour sauvegarder l'historique de partie pour tous les joueurs
+async function saveMatchHistory(gameCode) {
+  const game = games[gameCode];
+  if (!game || !mongoConnected) return;
+  
+  const gameStartTime = game.startTime || Date.now();
+  const gameEndTime = Date.now();
+  const duration = Math.floor((gameEndTime - gameStartTime) / 60000); // en minutes
+  const winner = game.winner;
+  
+  // Sauvegarder l'historique pour chaque joueur
+  for (const player of game.players) {
+    try {
+      // Déterminer si le joueur a gagné
+      let playerWon = false;
+      if (winner === 'BLEU' && player.team === 'bleu' && !player.isTraitor) {
+        playerWon = true;
+      } else if (winner === 'ROUGE' && player.team === 'rouge' && !player.isTraitor) {
+        playerWon = true;
+      } else if (winner === 'TRAITRES' && player.isTraitor) {
+        playerWon = true;
+      } else if (winner === 'AMOUREUX' && player.isLover) {
+        playerWon = true;
+      }
+      
+      // Trouver l'utilisateur par pseudo (approximatif, devrait être amélioré avec userId)
+      const user = await User.findOne({ username: player.pseudo });
+      if (!user) continue;
+      
+      // Ajouter l'entrée dans l'historique
+      user.matchHistory.push({
+        gameId: gameCode,
+        team: player.team,
+        role: player.role,
+        won: playerWon,
+        isTraitor: player.isTraitor || false,
+        playedAt: new Date(),
+        duration: duration,
+        playerCount: game.players.length
+      });
+      
+      // Mettre à jour les statistiques globales
+      user.gamesPlayed = (user.gamesPlayed || 0) + 1;
+      if (playerWon) {
+        user.gamesWon = (user.gamesWon || 0) + 1;
+      }
+      
+      // Réinitialiser currentGameId si c'est cette partie
+      if (user.currentGameId === gameCode) {
+        user.currentGameId = null;
+      }
+      
+      user.lastActivityAt = new Date();
+      
+      // Limiter l'historique à 100 parties max
+      if (user.matchHistory.length > 100) {
+        user.matchHistory = user.matchHistory.slice(-100);
+      }
+      
+      await user.save();
+      console.log(`📊 Historique sauvegardé pour ${player.pseudo}`);
+    } catch (error) {
+      console.error(`Erreur sauvegarde historique pour ${player.pseudo}:`, error);
+    }
+  }
 }
 
 // Notifie tous les joueurs du changement de phase de vote
@@ -738,6 +811,12 @@ io.on('connection', (socket) => {
         });
         await gameDoc.save();
         console.log(`💾 Partie ${gameCode} sauvegardée pour l'utilisateur ${userId}`);
+        
+        // Mettre à jour le currentGameId de l'utilisateur
+        await User.findByIdAndUpdate(userId, {
+          currentGameId: gameCode,
+          lastActivityAt: new Date()
+        });
       } catch (error) {
         console.error('Erreur lors de la sauvegarde de la partie:', error);
       }
@@ -753,7 +832,7 @@ io.on('connection', (socket) => {
   // ==========================
   // EVENT: REJOINDRE UNE PARTIE
   // ==========================
-  socket.on('join_game', (data) => {
+  socket.on('join_game', async (data) => {
     // Rate limiting
     const rateCheck = checkRateLimit(socket.id, 'join_game', 5, 60000);
     if (!rateCheck.allowed) {
@@ -826,6 +905,21 @@ io.on('connection', (socket) => {
 
     socket.emit('game_joined', { gameCode: codeValidation.value });
     
+    // Mettre à jour le currentGameId si l'utilisateur est connecté
+    if (mongoConnected) {
+      try {
+        const user = await User.findOne({ username: pseudoValidation.value });
+        if (user) {
+          user.currentGameId = codeValidation.value;
+          user.lastActivityAt = new Date();
+          await user.save();
+          console.log(`📝 currentGameId mis à jour pour ${pseudoValidation.value}`);
+        }
+      } catch (error) {
+        console.error('Erreur mise à jour currentGameId:', error);
+      }
+    }
+    
     // Envoyer l'historique des messages au nouveau joueur
     if (game.chatMessages && game.chatMessages.length > 0) {
       game.chatMessages.forEach(msg => {
@@ -835,7 +929,7 @@ io.on('connection', (socket) => {
           timestamp: msg.timestamp
         });
       });
-      console.log(`📜 ${game.chatMessages.length} messages envoyés à ${pseudo}`);
+      console.log(`📜 ${game.chatMessages.length} messages envoyés à ${pseudoValidation.value}`);
     }
     
     updateRoom(gameCode);

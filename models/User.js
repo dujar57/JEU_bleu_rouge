@@ -41,6 +41,27 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  matchHistory: [{
+    gameId: String,
+    team: String,
+    role: String,
+    won: Boolean,
+    isTraitor: Boolean,
+    playedAt: {
+      type: Date,
+      default: Date.now
+    },
+    duration: Number, // en minutes
+    playerCount: Number
+  }],
+  currentGameId: {
+    type: String,
+    default: null
+  },
+  lastActivityAt: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now

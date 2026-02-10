@@ -12,6 +12,17 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  // Système de notifications flottantes
+  const addNotification = (message, type = 'info', duration = 5000) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, duration);
+  };
 
   useEffect(() => {
     // Écouter les changements de phase de vote
@@ -20,11 +31,19 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       setVoteInfo(data);
       setVoteConfirmed(false);
       setSelectedVote(null);
+      
+      // Notification automatique
+      if (data.phase === 'DISCUSSION') {
+        addNotification(`💬 Phase de discussion ${data.voteNumber}/${data.totalVotes} - Préparez-vous à voter !`, 'info');
+      } else if (data.phase === 'VOTING') {
+        addNotification(`🗳️ VOTE EN COURS - N'oubliez pas de voter ! ${data.voteNumber}/${data.totalVotes}`, 'warning', 8000);
+      }
     });
 
     // Écouter la confirmation de vote
     socket.on('vote_confirmed', (data) => {
       setVoteConfirmed(true);
+      addNotification('✅ Votre vote a été enregistré avec succès !', 'success');
     });
 
     // Écouter les résultats de vote
@@ -40,6 +59,9 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     // Écouter les messages de chat
     socket.on('chat_message', (data) => {
       setMessages(prev => [...prev, data]);
+      if (!showChat) {
+        addNotification(`💬 Nouveau message de Joueur #${data.playerNumber}`, 'info', 3000);
+      }
     });
 
     return () => {
@@ -48,7 +70,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       socket.off('vote_results');
       socket.off('chat_message');
     };
-  }, [socket]);
+  }, [socket, showChat]);
 
   useEffect(() => {
     if (!gameData || !gameData.nextEventTime) return;
@@ -63,6 +85,35 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
 
     return () => clearInterval(interval);
   }, [gameData]);
+
+  // Rappels automatiques pour le vote
+  useEffect(() => {
+    if (!votingPhase || votingPhase !== 'VOTING' || !voteInfo || voteConfirmed) return;
+
+    // Premier rappel après 30 secondes
+    const reminder1 = setTimeout(() => {
+      if (!voteConfirmed) {
+        addNotification('⚠️ RAPPEL : Pensez à voter !', 'warning', 4000);
+      }
+    }, 30000);
+
+    // Deuxième rappel 20 secondes avant la fin
+    const timeUntilEnd = voteInfo.votingEnd - Date.now();
+    if (timeUntilEnd > 20000) {
+      const reminder2 = setTimeout(() => {
+        if (!voteConfirmed) {
+          addNotification('⚠️ URGENT : Plus que 20 secondes pour voter !', 'warning', 6000);
+        }
+      }, timeUntilEnd - 20000);
+
+      return () => {
+        clearTimeout(reminder1);
+        clearTimeout(reminder2);
+      };
+    }
+
+    return () => clearTimeout(reminder1);
+  }, [votingPhase, voteInfo, voteConfirmed]);
 
   const formatTime = (ms) => {
     if (!ms) return '0s';
@@ -143,6 +194,42 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
 
   return (
     <div style={{ display: 'flex', gap: '20px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+      {/* Notifications flottantes - Top Right */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '260px',
+        zIndex: 2000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        maxWidth: '350px'
+      }}>
+        {notifications.map(notif => (
+          <div
+            key={notif.id}
+            style={{
+              padding: '15px 20px',
+              background: notif.type === 'warning' ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' :
+                         notif.type === 'success' ? 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)' :
+                         'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: '4px solid #2C5F7F',
+              borderRadius: '10px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              fontFamily: 'Archivo Black',
+              boxShadow: '0 0 0 2px #E8D5B7, 0 8px 25px rgba(0,0,0,0.4)',
+              animation: 'slideInRight 0.5s ease-out',
+              cursor: 'pointer'
+            }}
+            onClick={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+          >
+            {notif.message}
+          </div>
+        ))}
+      </div>
+
       {/* Panneau latéral rétro arcade - FIXED à droite */}
       <div style={{
         position: 'fixed',
