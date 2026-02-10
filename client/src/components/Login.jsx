@@ -22,8 +22,9 @@ export default function Login({ onBack, onLoginSuccess }) {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         alert('✅ Connexion réussie !');
-        if (onLoginSuccess) onLoginSuccess(data);
+        if (onLoginSuccess) onLoginSuccess(data.user);
         onBack();
       } else {
         setError(data.message || 'Erreur de connexion');

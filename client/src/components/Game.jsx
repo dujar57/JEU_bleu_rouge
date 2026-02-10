@@ -609,8 +609,8 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           {/* Zone de saisie */}
           <form onSubmit={sendMessage} style={{
             padding: '15px',
-            borderTop: '1px solid #ddd',
-            background: 'white',
+            borderTop: '3px solid #2C5F7F',
+            background: '#E8D5B7',
             display: 'flex',
             gap: '10px'
           }}>
@@ -618,32 +618,44 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
               type="text"
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
-              placeholder="Votre message... (max 200 car.)"
+              placeholder="Écrivez votre message..."
               maxLength={200}
+              autoFocus
               style={{
                 flex: 1,
-                padding: '10px',
-                border: '2px solid #ddd',
+                padding: '12px',
+                border: '3px solid #2C5F7F',
                 borderRadius: '8px',
                 fontSize: '14px',
-                outline: 'none'
+                outline: 'none',
+                background: 'white',
+                fontFamily: 'Courier Prime, monospace'
               }}
               onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#ddd'}
+              onBlur={(e) => e.target.style.borderColor = '#2C5F7F'}
             />
             <button
               type="submit"
               style={{
-                padding: '10px 20px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
+                padding: '12px 24px',
+                background: currentMessage.trim() 
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                  : '#ccc',
+                border: '3px solid #2C5F7F',
                 borderRadius: '8px',
                 color: 'white',
                 fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '16px'
+                cursor: currentMessage.trim() ? 'pointer' : 'not-allowed',
+                fontSize: '18px',
+                transition: 'all 0.2s'
               }}
               disabled={!currentMessage.trim()}
+              onMouseEnter={(e) => {
+                if (currentMessage.trim()) e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+              }}
             >
               ➤
             </button>

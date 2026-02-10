@@ -1,14 +1,39 @@
 // -*- coding: utf-8 -*-
 // @charset "UTF-8"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './Login';
 import Register from './Register';
+import AccountMenu from './AccountMenu';
 
 function Home({ createGame, joinGame }) {
   const [mode, setMode] = useState(''); // 'create', 'join', 'login', ou 'register'
   const [pseudo, setPseudo] = useState('');
   const [realLifeInfo, setRealLifeInfo] = useState('');
   const [code, setCode] = useState('');
+  const [user, setUser] = useState(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    setMode(''); // Return to main screen
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setShowAccountMenu(false);
+    alert('👋 Déconnexion réussie !');
+  };
 
   const handleCreateGame = (e) => {
     e.preventDefault();
@@ -34,9 +59,54 @@ function Home({ createGame, joinGame }) {
     }
   };
 
+  if (mode === 'login') {
+    return <Login onBack={() => setMode('')} onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (mode === 'register') {
+    return <Register onBack={() => setMode('')} />;
+  }
+
   if (mode === '') {
     return (
-      <div className="container">
+      <>
+        {/* Account Button - Top Left */}
+        {user && (
+          <button
+            onClick={() => setShowAccountMenu(true)}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              left: '20px',
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: '4px solid #2C5F7F',
+              boxShadow: '0 0 0 2px #E8D5B7, 0 8px 20px rgba(0,0,0,0.3)',
+              color: 'white',
+              fontSize: '28px',
+              cursor: 'pointer',
+              zIndex: 1000,
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            👤
+          </button>
+        )}
+
+        {/* Account Menu Modal */}
+        {showAccountMenu && (
+          <AccountMenu
+            user={user}
+            onClose={() => setShowAccountMenu(false)}
+            onLogout={handleLogout}
+          />
+        )}
+
+        <div className="container">
         <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
         <div className="logo">
           <h1>
@@ -69,17 +139,27 @@ function Home({ createGame, joinGame }) {
           </ul>
         </div>
         
+        {/* Auth Links - Show Login/Register or Logout */}
         <div className="auth-links">
-          <button onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>CONNEXION</button>
-          <span style={{ color: 'rgba(44,95,127,0.3)', fontSize: '24px' }}>|</span>
-          <button onClick={() => setMode('register')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>INSCRIPTION</button>
+          {!user ? (
+            <>
+              <button onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>CONNEXION</button>
+              <span style={{ color: 'rgba(44,95,127,0.3)', fontSize: '24px' }}>|</span>
+              <button onClick={() => setMode('register')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>INSCRIPTION</button>
+            </>
+          ) : (
+            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#ff416c', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>
+              🚪 DÉCONNEXION
+            </button>
+          )}
         </div>
       </div>
+      </>
     );
   }
 
   if (mode === 'login') {
-    return <Login onBack={() => setMode('')} />;
+    return <Login onBack={() => setMode('')} onLoginSuccess={handleLoginSuccess} />;
   }
 
   if (mode === 'register') {
