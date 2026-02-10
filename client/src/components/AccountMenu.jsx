@@ -6,10 +6,27 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
   const [currentGames, setCurrentGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [updateMessage, setUpdateMessage] = useState('');
+  const [updateError, setUpdateError] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchUserData();
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
     }
   }, [user]);
 
@@ -32,6 +49,83 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
       console.error('Erreur chargement profil:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setUpdateMessage('');
+    setUpdateError('');
+
+    // Validation
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      setUpdateError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (formData.newPassword && !formData.currentPassword) {
+      setUpdateError('Le mot de passe actuel est requis pour changer de mot de passe');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const updateData = {};
+      
+      if (formData.username !== user.username) updateData.username = formData.username;
+      if (formData.email !== user.email) updateData.email = formData.email;
+      if (formData.newPassword) {
+        updateData.currentPassword = formData.currentPassword;
+        updateData.newPassword = formData.newPassword;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        setUpdateError('Aucune modification détectée');
+        return;
+      }
+
+      const response = await fetch('https://jeu-bleu-rouge.onrender.com/api/auth/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUpdateMessage('✅ Profil mis à jour avec succès !');
+        if (data.emailChanged) {
+          setUpdateMessage(data.emailChanged);
+        }
+        
+        // Mettre à jour le localStorage
+        const updatedUser = { ...user, ...data.user };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // Réinitialiser le formulaire
+        setFormData({
+          username: data.user.username,
+          email: data.user.email,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        
+        setEditMode(false);
+        
+        // Recharger après 2 secondes pour afficher le nouveau profil
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setUpdateError(data.error || 'Erreur lors de la mise à jour');
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour:', error);
+      setUpdateError('Erreur de connexion au serveur');
     }
   };
 
@@ -137,6 +231,34 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
             <>
               {activeTab === 'profile' && (
                 <div>
+                  {updateMessage && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                      padding: '15px',
+                      borderRadius: '10px',
+                      marginBottom: '15px',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      textAlign: 'center'
+                    }}>
+                      {updateMessage}
+                    </div>
+                  )}
+                  
+                  {updateError && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                      padding: '15px',
+                      borderRadius: '10px',
+                      marginBottom: '15px',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      textAlign: 'center'
+                    }}>
+                      {updateError}
+                    </div>
+                  )}
+
                   <div style={{
                     background: 'white',
                     padding: '20px',
@@ -144,18 +266,159 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame }) {
                     border: '3px solid #2C5F7F',
                     marginBottom: '20px'
                   }}>
-                    <h3 style={{ marginTop: 0, color: '#2C5F7F' }}>Informations</h3>
-                    <p><strong>👤 Pseudo:</strong> {user?.username || 'N/A'}</p>
-                    <p><strong>📧 Email:</strong> {user?.email || 'N/A'}</p>
-                    <p><strong>✅ Email vérifié:</strong> {user?.emailVerified ? '✅ Oui' : '❌ Non'}</p>
-                    <p><strong>🎮 Parties jouées:</strong> {user?.gamesPlayed || 0}</p>
-                    <p><strong>🏆 Victoires:</strong> {user?.gamesWon || 0}</p>
-                    <p><strong>📊 Taux de victoire:</strong> {
-                      user?.gamesPlayed > 0 
-                        ? `${Math.round((user?.gamesWon / user?.gamesPlayed) * 100)}%`
-                        : '0%'
-                    }</p>
-                    <p><strong>📅 Membre depuis:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <h3 style={{ margin: 0, color: '#2C5F7F' }}>Informations</h3>
+                      <button
+                        onClick={() => {
+                          setEditMode(!editMode);
+                          setUpdateMessage('');
+                          setUpdateError('');
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          background: editMode ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          border: '2px solid #2C5F7F',
+                          borderRadius: '6px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {editMode ? '✖ Annuler' : '✏️ Modifier'}
+                      </button>
+                    </div>
+
+                    {!editMode ? (
+                      <>
+                        <p><strong>👤 Pseudo:</strong> {user?.username || 'N/A'}</p>
+                        <p><strong>📧 Email:</strong> {user?.email || 'N/A'}</p>
+                        <p><strong>✅ Email vérifié:</strong> {user?.emailVerified ? '✅ Oui' : '❌ Non'}</p>
+                        <p><strong>🎮 Parties jouées:</strong> {user?.gamesPlayed || 0}</p>
+                        <p><strong>🏆 Victoires:</strong> {user?.gamesWon || 0}</p>
+                        <p><strong>📊 Taux de victoire:</strong> {
+                          user?.gamesPlayed > 0 
+                            ? `${Math.round((user?.gamesWon / user?.gamesPlayed) * 100)}%`
+                            : '0%'
+                        }</p>
+                        <p><strong>📅 Membre depuis:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                      </>
+                    ) : (
+                      <form onSubmit={handleUpdateProfile}>
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2C5F7F' }}>
+                            👤 Pseudo
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #2C5F7F',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2C5F7F' }}>
+                            📧 Email
+                          </label>
+                          <input
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #2C5F7F',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                          <small style={{ color: '#666', fontSize: '11px' }}>
+                            ⚠️ Changer l'email nécessite une nouvelle vérification
+                          </small>
+                        </div>
+
+                        <hr style={{ margin: '20px 0', border: '1px solid #ddd' }} />
+
+                        <div style={{ marginBottom: '10px' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2C5F7F' }}>
+                            🔒 Changer le mot de passe (optionnel)
+                          </label>
+                        </div>
+
+                        <div style={{ marginBottom: '10px' }}>
+                          <input
+                            type="password"
+                            placeholder="Mot de passe actuel"
+                            value={formData.currentPassword}
+                            onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #2C5F7F',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginBottom: '10px' }}>
+                          <input
+                            type="password"
+                            placeholder="Nouveau mot de passe"
+                            value={formData.newPassword}
+                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #2C5F7F',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginBottom: '15px' }}>
+                          <input
+                            type="password"
+                            placeholder="Confirmer nouveau mot de passe"
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: '2px solid #2C5F7F',
+                              borderRadius: '6px',
+                              fontSize: '14px'
+                            }}
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                            border: '3px solid #2C5F7F',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontFamily: 'Archivo Black',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          💾 SAUVEGARDER
+                        </button>
+                      </form>
+                    )}
                   </div>
 
                   <div style={{

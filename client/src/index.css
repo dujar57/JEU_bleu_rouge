@@ -419,6 +419,834 @@ button.secondary:hover {
     opacity: 0.8;
   }
 }
+
+/* Bouton compte utilisateur fixe */
+.account-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 4px solid #2C5F7F;
+  box-shadow: 0 0 0 2px #E8D5B7, 0 8px 20px rgba(0,0,0,0.3);
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s;
+}
+
+/* Bandeau utilisateur */
+.user-banner {
+  position: relative;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 6px solid #2C5F7F;
+  border-radius: 15px;
+  box-shadow: 0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3);
+  text-align: center;
+  animation: pulse 2s ease-in-out infinite;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.user-banner-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: white;
+  font-family: 'Archivo Black', sans-serif;
+  text-shadow: 0 0 10px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.user-banner-username {
+  font-size: 20px;
+  color: #fff;
+  font-family: 'Anton', sans-serif;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  letter-spacing: 1px;
+}
+
+.user-banner-name {
+  color: #00ff88;
+  font-weight: bold;
+  text-shadow: 0 0 10px #00ff88, 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.user-banner-stats {
+  margin-top: 10px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  font-family: 'Courier Prime', monospace;
+}
+
+.user-banner-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.9);
+  font-family: 'Archivo Black', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* ================================
+   RESPONSIVE DESIGN - MOBILE FIRST
+   ================================ */
+
+/* Tablettes et petits écrans (max 768px) */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+    align-items: flex-start;
+    padding-top: 80px;
+  }
+
+  body::after {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border-width: 4px;
+  }
+
+  #root {
+    padding: 10px;
+    max-width: 100%;
+  }
+
+  /* Bouton compte responsive */
+  .account-button {
+    top: 15px;
+    left: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    border-width: 3px;
+  }
+
+  /* Bandeau utilisateur responsive */
+  .user-banner {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-width: 4px;
+  }
+
+  .user-banner-title {
+    font-size: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .user-banner-username {
+    font-size: 16px;
+  }
+
+  .user-banner-stats {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  .user-banner-hint {
+    font-size: 10px;
+    margin-top: 8px;
+  }
+
+  .logo-circle {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 25px;
+    border-width: 6px;
+  }
+
+  .container {
+    padding: 30px 20px;
+    border-width: 3px;
+    box-shadow: 
+      0 0 0 4px #E8D5B7,
+      0 0 0 8px #2C5F7F,
+      0 15px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  h1 {
+    font-size: 42px;
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+    line-height: 1.1;
+  }
+
+  .tagline {
+    font-size: 16px;
+    letter-spacing: 3px;
+    margin-bottom: 25px;
+  }
+
+  h2 {
+    font-size: 24px;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+  }
+
+  .vs {
+    font-size: 38px;
+    margin: 0 10px;
+  }
+
+  .description {
+    padding: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+  }
+
+  .description strong {
+    font-size: 16px;
+  }
+
+  .rules {
+    padding: 20px;
+    margin: 25px auto;
+  }
+
+  .rules h3 {
+    font-size: 24px;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+  }
+
+  .rules li {
+    font-size: 15px;
+    margin: 12px auto;
+    line-height: 1.6;
+  }
+
+  .rules li strong {
+    font-size: 16px;
+  }
+
+  .rules li::before {
+    font-size: 18px;
+  }
+
+  input {
+    padding: 14px 16px;
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+
+  button {
+    padding: 16px 30px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .game-code {
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .game-code .code {
+    font-size: 32px;
+    letter-spacing: 6px;
+  }
+
+  .player-item {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .player-name {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  .role-card {
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+
+  .role-card h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  .role-card .team {
+    font-size: 22px;
+  }
+
+  .role-card .role {
+    font-size: 16px;
+  }
+
+  .auth-links {
+    margin-top: 25px;
+    padding-top: 25px;
+    font-size: 16px;
+  }
+
+  .auth-links a {
+    display: block;
+    margin: 10px 0;
+    padding: 12px 16px;
+  }
+}
+
+/* Smartphones (max 480px) */
+@media (max-width: 480px) {
+  body {
+    padding: 5px;
+    padding-top: 75px;
+  }
+
+  body::after {
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    border-width: 3px;
+    border-radius: 5px;
+  }
+
+  #root {
+    padding: 5px;
+  }
+
+  /* Bouton compte mobile */
+  .account-button {
+    top: 10px;
+    left: 10px;
+    width: 45px;
+    height: 45px;
+    font-size: 22px;
+    border-width: 3px;
+    box-shadow: 0 0 0 2px #E8D5B7, 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  /* Bandeau utilisateur mobile */
+  .user-banner {
+    margin-bottom: 15px;
+    padding: 12px;
+    border-width: 3px;
+    border-radius: 10px;
+  }
+
+  .user-banner-title {
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .user-banner-username {
+    font-size: 14px;
+  }
+
+  .user-banner-stats {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .user-banner-hint {
+    font-size: 9px;
+    margin-top: 6px;
+    display: none; /* Cacher sur très petits écrans */
+  }
+
+  .logo-circle {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+    border-width: 5px;
+  }
+
+  .container {
+    padding: 25px 15px;
+    border-radius: 15px;
+  }
+
+  h1 {
+    font-size: 32px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  .blue, .red {
+    transform: none;
+  }
+
+  .tagline {
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .vs {
+    font-size: 28px;
+    margin: 0 8px;
+    transform: scale(1.1);
+  }
+
+  .description {
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    border-width: 3px;
+  }
+
+  .description p {
+    margin-bottom: 12px;
+  }
+
+  .description strong {
+    font-size: 15px;
+  }
+
+  .rules {
+    padding: 15px;
+    margin: 20px auto;
+    border-width: 3px;
+  }
+
+  .rules h3 {
+    font-size: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .rules li {
+    font-size: 14px;
+    margin: 10px auto;
+    max-width: 100%;
+  }
+
+  .rules li strong {
+    font-size: 15px;
+  }
+
+  .rules li::before {
+    font-size: 16px;
+  }
+
+  input {
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    border-width: 2px;
+  }
+
+  button {
+    padding: 14px 24px;
+    font-size: 15px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    border-width: 2px;
+    box-shadow: 
+      0 4px 0 #1a0f0a,
+      0 6px 10px rgba(0,0,0,0.3);
+  }
+
+  button:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      0 5px 0 #1a0f0a,
+      0 7px 12px rgba(0,0,0,0.4);
+  }
+
+  button:active {
+    transform: translateY(2px);
+    box-shadow: 
+      0 2px 0 #1a0f0a,
+      0 3px 5px rgba(0,0,0,0.2);
+  }
+
+  .game-code {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-width: 2px;
+  }
+
+  .game-code h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .game-code .code {
+    font-size: 28px;
+    letter-spacing: 4px;
+  }
+
+  .player-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-left-width: 4px;
+  }
+
+  .player-name {
+    font-size: 15px;
+  }
+
+  .player-info {
+    font-size: 12px;
+  }
+
+  .role-card {
+    padding: 18px;
+    border-width: 2px;
+  }
+
+  .role-card h2 {
+    font-size: 20px;
+  }
+
+  .role-card .team {
+    font-size: 20px;
+  }
+
+  .role-card .role {
+    font-size: 15px;
+  }
+
+  .error {
+    padding: 14px;
+    font-size: 14px;
+    margin-bottom: 14px;
+    border-width: 2px;
+  }
+
+  .loading {
+    padding: 30px;
+    font-size: 16px;
+  }
+
+  .auth-links {
+    margin-top: 20px;
+    padding-top: 20px;
+    font-size: 15px;
+  }
+
+  .auth-links a {
+    display: block;
+    margin: 8px 0;
+    padding: 10px 14px;
+    letter-spacing: 2px;
+  }
+}
+
+/* Très petits écrans (max 360px) */
+@media (max-width: 360px) {
+  h1 {
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  .logo-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .container {
+    padding: 20px 12px;
+  }
+
+  .game-code .code {
+    font-size: 24px;
+    letter-spacing: 3px;
+  }
+}
+
+/* Orientation paysage sur mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  body {
+    padding-top: 10px;
+    align-items: flex-start;
+  }
+
+  .logo-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 15px;
+  }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+
+  .container {
+    padding: 20px 15px;
+  }
+
+  .description, .rules {
+    display: none;
+  }
+}
+
+/* ================================
+   RESPONSIVE POUR COMPOSANTS REACT
+   ================================ */
+
+/* ProfilePage et AccountMenu - Grilles responsive */
+@media (max-width: 768px) {
+  /* Forcer les grilles à 1 colonne sur tablette */
+  div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Header ProfilePage */
+  div[style*="fontSize: '48px'"] {
+    font-size: 32px !important;
+  }
+  
+  /* Stats cards */
+  div[style*="fontSize: '42px'"][style*="Archivo Black"] {
+    font-size: 28px !important;
+  }
+  
+  div[style*="fontSize: '36px'"][style*="fontFamily: 'Archivo Black'"] {
+    font-size: 24px !important;
+  }
+  
+  /* Icons */
+  div[style*="fontSize: '64px'"] {
+    font-size: 48px !important;
+  }
+  
+  div[style*="fontSize: '80px'"] {
+    font-size: 60px !important;
+  }
+  
+  /* Avatar ProfilePage */
+  div[style*="width: '150px'"][style*="height: '150px'"] {
+    width: 100px !important;
+    height: 100px !important;
+    font-size: 50px !important;
+  }
+  
+  /* Flex à colonne sur mobile pour carte identité */
+  div[style*="display: 'flex'"][style*="gap: '40px'"] {
+    flex-direction: column !important;
+    gap: 20px !important;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Forcer tout en 1 colonne sur mobile */
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Réduire tous les gros textes */
+  div[style*="fontSize: '48px'"] {
+    font-size: 28px !important;
+  }
+  
+  div[style*="fontSize: '42px'"] {
+    font-size: 24px !important;
+  }
+  
+  div[style*="fontSize: '36px'"] {
+    font-size: 20px !important;
+  }
+  
+  div[style*="fontSize: '32px'"] {
+    font-size: 20px !important;
+  }
+  
+  div[style*="fontSize: '28px'"] {
+    font-size: 18px !important;
+  }
+  
+  div[style*="fontSize: '24px'"] {
+    font-size: 16px !important;
+  }
+  
+  /* Icons plus petits */
+  div[style*="fontSize: '80px'"] {
+    font-size: 50px !important;
+  }
+  
+  div[style*="fontSize: '64px'"] {
+    font-size: 40px !important;
+  }
+  
+  /* Avatar encore plus petit */
+  div[style*="width: '150px'"][style*="height: '150px'"] {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 40px !important;
+  }
+  
+  /* Réduire les paddings partout */
+  div[style*="padding: '40px'"] {
+    padding: 20px !important;
+  }
+  
+  div[style*="padding: '30px'"] {
+    padding: 15px !important;
+  }
+  
+  div[style*="padding: '25px'"] {
+    padding: 12px !important;
+  }
+  
+  div[style*="padding: '20px'"] {
+    padding: 12px !important;
+  }
+  
+  /* Réduire les gaps */
+  div[style*="gap: '40px'"] {
+    gap: 15px !important;
+  }
+  
+  div[style*="gap: '20px'"] {
+    gap: 10px !important;
+  }
+  
+  div[style*="gap: '15px'"] {
+    gap: 8px !important;
+  }
+  
+  /* Réduire borders épaisses */
+  div[style*="border: '8px solid"] {
+    border-width: 4px !important;
+  }
+  
+  div[style*="border: '6px solid"] {
+    border-width: 3px !important;
+  }
+  
+  /* AccountMenu modal */
+  div[style*="maxWidth: '700px'"] {
+    width: 95% !important;
+    max-height: 90vh !important;
+  }
+  
+  /* Tabs AccountMenu */
+  button[style*="flex: 1"] {
+    font-size: 11px !important;
+    padding: 10px 5px !important;
+  }
+}
+
+/* ================================
+   GAME COMPONENT - Style ajusté
+   ================================ */
+
+@media (max-width: 1024px) {
+  /* Panneau latéral Game.jsx - Passer en sticky top */
+  div[style*="position: 'fixed'"][style*="right: '20px'"][style*="top: '50%'"] {
+    position: relative !important;
+    transform: none !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-bottom: 20px !important;
+  }
+  
+  /* Container game sans margin right */
+  div[style*="marginRight: '240px'"] {
+    margin-right: 0 !important;
+  }
+  
+  /* Layout flex à colonne */
+  div[style*="display: 'flex'"][style*="maxWidth: '1400px'"] {
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Notifications en haut centre sur mobile */
+  div[style*="position: 'fixed'"][style*="right: '260px'"][style*="top: '20px'"] {
+    right: 50% !important;
+    transform: translateX(50%) !important;
+    max-width: 90% !important;
+  }
+  
+  /* SVG timer plus petit */
+  svg[width="140"] {
+    width: 100px !important;
+    height: 100px !important;
+  }
+  
+  /* Textes notifications plus petits */
+  div[style*="animation: 'slideInRight'"] {
+    font-size: 12px !important;
+    padding: 12px 15px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Notifications encore plus petites */
+  div[style*="position: 'fixed'"][style*="flexDirection: 'column'"] {
+    top: 10px !important;
+    max-width: 95% !important;
+    gap: 5px !important;
+  }
+  
+  div[style*="animation: 'slideInRight'"] {
+    font-size: 11px !important;
+    padding: 10px 12px !important;
+    border-width: 3px !important;
+  }
+  
+  /* SVG timer encore plus petit */
+  svg[width="140"] {
+    width: 80px !important;
+    height: 80px !important;
+  }
+  
+  /* Panneau arcade plus compact */
+  div[style*="background: 'linear-gradient(135deg, #1a1a2e"] {
+    padding: 15px 10px !important;
+    border-width: 4px !important;
+  }
+}
+
+/* ================================
+   LOBBY COMPONENT - Grille durées
+   ================================ */
+
+@media (max-width: 768px) {
+  /* Grille durées à 1 colonne sur tablette */
+  div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Lobby - Réduire marges et paddings */
+  div[style*="marginTop: '25px'"][style*="padding: '20px'"] {
+    margin-top: 15px !important;
+    padding: 15px !important;
+  }
+  
+  /* Titre durée plus petit */
+  h3[style*="fontSize: '20px'"] {
+    font-size: 16px !important;
+  }
+  
+  /* Boutons durée plus compacts */
+  button[style*="padding: '14px'"] {
+    padding: 12px !important;
+    font-size: 14px !important;
+  }
+}
 .description {
   margin: 0 auto 45px;
   padding: 30px;

@@ -74,22 +74,7 @@ function Home({ createGame, joinGame, onViewProfile }) {
         {user && (
           <button
             onClick={() => setShowAccountMenu(true)}
-            style={{
-              position: 'fixed',
-              top: '20px',
-              left: '20px',
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: '4px solid #2C5F7F',
-              boxShadow: '0 0 0 2px #E8D5B7, 0 8px 20px rgba(0,0,0,0.3)',
-              color: 'white',
-              fontSize: '28px',
-              cursor: 'pointer',
-              zIndex: 1000,
-              transition: 'transform 0.2s'
-            }}
+            className="account-button"
             onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
             onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
           >
@@ -121,19 +106,7 @@ function Home({ createGame, joinGame, onViewProfile }) {
         {user && (
           <div 
             onClick={onViewProfile}
-            style={{
-              position: 'relative',
-              marginBottom: '30px',
-              padding: '20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: '6px solid #2C5F7F',
-              borderRadius: '15px',
-              boxShadow: '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)',
-              textAlign: 'center',
-              animation: 'pulse 2s ease-in-out infinite',
-              cursor: 'pointer',
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
+            className="user-banner"
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.02)';
               e.currentTarget.style.boxShadow = '0 0 0 4px #E8D5B7, 0 15px 40px rgba(102,126,234,0.5), inset 0 2px 8px rgba(255,255,255,0.3)';
@@ -143,45 +116,16 @@ function Home({ createGame, joinGame, onViewProfile }) {
               e.currentTarget.style.boxShadow = '0 0 0 4px #E8D5B7, 0 10px 30px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3)';
             }}
           >
-            <div style={{
-              fontSize: '28px',
-              fontWeight: 'bold',
-              color: 'white',
-              fontFamily: 'Archivo Black',
-              textShadow: '0 0 10px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3)',
-              marginBottom: '8px',
-              letterSpacing: '2px'
-            }}>
+            <div className="user-banner-title">
               ⚡ CONNECTÉ ⚡
             </div>
-            <div style={{
-              fontSize: '20px',
-              color: '#fff',
-              fontFamily: 'Anton',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-              letterSpacing: '1px'
-            }}>
-              🎮 JOUEUR : <span style={{ 
-                color: '#00ff88',
-                fontWeight: 'bold',
-                textShadow: '0 0 10px #00ff88, 0 2px 4px rgba(0,0,0,0.5)'
-              }}>{user.username.toUpperCase()}</span> 🎮
+            <div className="user-banner-username">
+              🎮 JOUEUR : <span className="user-banner-name">{user.username.toUpperCase()}</span> 🎮
             </div>
-            <div style={{
-              marginTop: '10px',
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.8)',
-              fontFamily: 'Courier Prime'
-            }}>
+            <div className="user-banner-stats">
               🏆 {user.gamesPlayed || 0} parties • {user.gamesWon || 0} victoires
             </div>
-            <div style={{
-              marginTop: '12px',
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.9)',
-              fontFamily: 'Archivo Black',
-              letterSpacing: '1px'
-            }}>
+            <div className="user-banner-hint">
               👆 CLIQUEZ POUR VOIR VOTRE PROFIL DÉTAILLÉ
             </div>
           </div>
