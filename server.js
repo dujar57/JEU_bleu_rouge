@@ -101,13 +101,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Autoriser localhost sans origin en dev
-    if (!origin && process.env.NODE_ENV !== 'production') {
+    // Autoriser les requêtes sans origin (same-origin, ex: même domaine)
+    if (!origin) {
       return callback(null, true);
-    }
-    // En production, rejeter les requêtes sans origin (possibles attaques)
-    if (!origin && process.env.NODE_ENV === 'production') {
-      return callback(new Error('Non autorisé par CORS'));
     }
     // Accepter les origins autorisées
     if (allowedOrigins.includes(origin)) {
