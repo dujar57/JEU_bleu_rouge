@@ -148,7 +148,7 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
         </div>
         
         <div className="description">
-          <p><strong>🎯 OBJECTIF :</strong> Affrontez-vous en équipes avec des rôles secrets, éliminez les autres… et qu'il ne reste qu'un seul camp gagnant</p>
+          <p><strong>🎯 OBJECTIF :</strong> Éliminer les autres équipes grâce aux rôles secrets et aux stratégies, jusqu'à devenir le dernier camp survivant.</p>
           <p><strong>👥 JOUEURS :</strong> 4 minimum (8+ pour les traîtres)</p>
           <p><strong>⏱️ DURÉE :</strong> De 20 minutes à 10 jours</p>
         </div>
@@ -159,13 +159,14 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
         </button>
         
         <div className="rules">
-          <h3>📋 COMMENT JOUER ?</h3>
+          <h3>📋 RÈGLES DU JEU</h3>
           <ul>
-            <li><strong>Deux équipes :</strong> Bleus contre Rouges</li>
-            <li><strong>Traîtres cachés :</strong> Certains joueurs infiltrent l'équipe adverse</li>
-            <li><strong>Votes réguliers :</strong> Éliminez les suspects à chaque tour</li>
-            <li><strong>Chat anonyme :</strong> Discutez sans révéler votre identité</li>
-            <li><strong>Gagnez :</strong> Éliminez tous les adversaires ou démasquez les traîtres</li>
+            <li><strong>3 camps :</strong> Bleus, Rouges, et Traîtres infiltrés dans chaque équipe</li>
+            <li><strong>Rôles secrets :</strong> Chaque joueur reçoit un rôle unique avec des pouvoirs spéciaux</li>
+            <li><strong>Votes périodiques :</strong> Éliminez un suspect à chaque tour de vote</li>
+            <li><strong>Chat anonyme :</strong> Discutez, mentez et déduisez sans révéler votre identité</li>
+            <li><strong>Stratégie :</strong> Les traîtres doivent infiltrer et éliminer leur propre camp sans se faire démasquer</li>
+            <li><strong>Victoire :</strong> Le dernier camp avec des survivants remporte la partie</li>
           </ul>
         </div>
         
