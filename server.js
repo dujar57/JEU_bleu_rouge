@@ -642,11 +642,10 @@ async function saveMatchHistory(gameCode) {
       } else if (winner === 'AMOUREUX' && player.isLover) {
         playerWon = true;
       }
-      
-      // Trouver l'utilisateur par pseudo (approximatif, devrait être amélioré avec userId)
-      const user = await User.findOne({ username: player.pseudo });
+      // Utiliser userId si présent sur le joueur
+      if (!player.userId) continue;
+      const user = await User.findById(player.userId);
       if (!user) continue;
-      
       // Ajouter l'entrée dans l'historique
       user.matchHistory.push({
         gameId: gameCode,
@@ -658,27 +657,22 @@ async function saveMatchHistory(gameCode) {
         duration: duration,
         playerCount: game.players.length
       });
-      
       // Mettre à jour les statistiques globales
       user.gamesPlayed = (user.gamesPlayed || 0) + 1;
       if (playerWon) {
         user.gamesWon = (user.gamesWon || 0) + 1;
       }
-      
       // Retirer la partie des parties en cours
       user.currentGames = user.currentGames.filter(g => g.gameId !== gameCode);
-      
       user.lastActivityAt = new Date();
-      
       // Limiter l'historique à 100 parties max
       if (user.matchHistory.length > 100) {
         user.matchHistory = user.matchHistory.slice(-100);
       }
-      
       await user.save();
-      console.log(`📊 Historique sauvegardé pour ${player.pseudo}`);
+      console.log(`📊 Historique sauvegardé pour userId=${player.userId}`);
     } catch (error) {
-      console.error(`Erreur sauvegarde historique pour ${player.pseudo}:`, error);
+      console.error(`Erreur sauvegarde historique pour userId=${player.userId}:`, error);
     }
   }
 }
@@ -1359,7 +1353,8 @@ io.on('connection', (socket) => {
       role: null,
       isAlive: true,
       hasVoted: false,
-      munitions: 0
+      munitions: 0,
+      userId: socket.userId || null // Lier au user authentifié si présent
     });
 
     socket.join(codeValidation.value);
@@ -1368,9 +1363,9 @@ io.on('connection', (socket) => {
     socket.emit('game_joined', { gameCode: codeValidation.value });
     
     // Ajouter la partie aux parties en cours si l'utilisateur est connecté
-    if (mongoConnected) {
+    if (mongoConnected && socket.userId) {
       try {
-        const user = await User.findOne({ username: pseudoValidation.value });
+        const user = await User.findById(socket.userId);
         if (user) {
           // Vérifier si la partie n'est pas déjà dans la liste
           const gameExists = user.currentGames.some(g => g.gameId === codeValidation.value);
@@ -1382,7 +1377,7 @@ io.on('connection', (socket) => {
             });
             user.lastActivityAt = new Date();
             await user.save();
-            console.log(`📝 Partie ajoutée aux parties en cours pour ${pseudoValidation.value}`);
+            console.log(`📝 Partie ajoutée aux parties en cours pour userId=${socket.userId}`);
           }
         }
       } catch (error) {
