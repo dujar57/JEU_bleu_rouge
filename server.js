@@ -939,8 +939,8 @@ function electRepresentants(gameCode) {
   const game = games[gameCode];
   if (!game || game.representantElected) return;
   
-  const blueAlive = game.players.filter(p => p.team === 'bleu' && p.isAlive && !p.isTraitor);
-  const redAlive = game.players.filter(p => p.team === 'rouge' && p.isAlive && !p.isTraitor);
+  const blueAlive = game.players.filter(p => p.team === 'bleu' && p.isAlive);
+  const redAlive = game.players.filter(p => p.team === 'rouge' && p.isAlive);
   
   let blueRep = null;
   let redRep = null;
@@ -949,14 +949,14 @@ function electRepresentants(gameCode) {
   if (blueAlive.length > 0) {
     blueRep = blueAlive[Math.floor(Math.random() * blueAlive.length)];
     blueRep.isRepresentant = true;
-    console.log(`👑 Représentant BLEU élu : Joueur ${blueRep.anonymousNumber} (${blueRep.pseudo}) - Rôle : ${blueRep.role}`);
+    console.log(`👑 Représentant BLEU élu : Joueur ${blueRep.anonymousNumber} (${blueRep.pseudo}) - Rôle : ${blueRep.role}${blueRep.isTraitor ? ' 🎭 TRAÎTRE' : ''}`);
   }
   
   // Élire un représentant rouge aléatoire
   if (redAlive.length > 0) {
     redRep = redAlive[Math.floor(Math.random() * redAlive.length)];
     redRep.isRepresentant = true;
-    console.log(`👑 Représentant ROUGE élu : Joueur ${redRep.anonymousNumber} (${redRep.pseudo}) - Rôle : ${redRep.role}`);
+    console.log(`👑 Représentant ROUGE élu : Joueur ${redRep.anonymousNumber} (${redRep.pseudo}) - Rôle : ${redRep.role}${redRep.isTraitor ? ' 🎭 TRAÎTRE' : ''}`);
   }
   
   game.representantElected = true;
