@@ -102,9 +102,6 @@ function Tutorial({ onClose }) {
             <p style={{ marginBottom: '12px' }}>
               🔢 Vous êtes identifié uniquement par votre <strong>numéro de joueur</strong> dans le chat
             </p>
-            <p style={{ marginBottom: '12px' }}>
-              👥 Les autres joueurs voient votre nom réel dans la liste
-            </p>
             <p>
               💡 Utilisez cette anonymat pour bluffer et manipuler les votes !
             </p>
@@ -126,6 +123,10 @@ function Tutorial({ onClose }) {
           <div style={{ marginBottom: '15px', padding: '12px', background: 'rgba(244, 67, 54, 0.1)', borderRadius: '8px' }}>
             <strong>🔴 Équipe Rouge gagne si :</strong>
             <p style={{ marginTop: '8px' }}>Le représentant Bleu meurt ET tous les Bleus sont éliminés</p>
+          </div>
+          <div style={{ marginBottom: '15px', padding: '12px', background: 'rgba(156, 39, 176, 0.1)', borderRadius: '8px' }}>
+            <strong>🎭 Traîtres gagnent si :</strong>
+            <p style={{ marginTop: '8px' }}>Les 2 représentants sont morts ET les traîtres sont vivants</p>
           </div>
           <div style={{ padding: '12px', background: 'rgba(233, 30, 99, 0.1)', borderRadius: '8px' }}>
             <strong>💕 Amoureux gagnent si :</strong>
