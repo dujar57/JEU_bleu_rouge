@@ -1216,9 +1216,9 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           bottom: window.innerWidth < 768 ? '0' : '100px',
           left: window.innerWidth < 768 ? '0' : '20px',
           right: window.innerWidth < 768 ? '0' : 'auto',
-          width: window.innerWidth < 768 ? '100%' : '420px',
+          width: window.innerWidth < 768 ? '100%' : '550px',
           maxWidth: window.innerWidth < 768 ? '100%' : 'calc(100vw - 40px)',
-          height: window.innerWidth < 768 ? '100vh' : '580px',
+          height: window.innerWidth < 768 ? '100vh' : '700px',
           maxHeight: window.innerWidth < 768 ? '100vh' : 'calc(100vh - 120px)',
           background: '#E8D5B7',
           border: window.innerWidth < 768 ? 'none' : '6px solid #2C5F7F',
@@ -1231,7 +1231,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           zIndex: 9999,
           overflow: 'hidden',
           animation: window.innerWidth < 768 ? 'slideUpMobile 0.3s ease-out' : 'slideUp 0.3s ease-out'
-        }}>
+        }}>;
           {/* En-tête du chat */}
           <div style={{
             padding: window.innerWidth < 768 ? '18px' : '15px',
@@ -1356,7 +1356,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                     </div>
                     <div style={{ 
                       color: '#333', 
-                      fontSize: window.innerWidth < 768 ? '15px' : '14px', 
+                      fontSize: window.innerWidth < 768 ? '14px' : '12px', 
                       wordWrap: 'break-word',
                       lineHeight: '1.5',
                       whiteSpace: 'pre-wrap'
@@ -1388,10 +1388,10 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
               autoFocus={window.innerWidth >= 768}
               style={{
                 flex: 1,
-                padding: window.innerWidth < 768 ? '14px' : '12px',
+                padding: window.innerWidth < 768 ? '16px' : '18px',
                 border: '3px solid #2C5F7F',
                 borderRadius: '10px',
-                fontSize: window.innerWidth < 768 ? '16px' : '14px',
+                fontSize: window.innerWidth < 768 ? '16px' : '15px',
                 outline: 'none',
                 background: 'white',
                 fontFamily: 'Courier Prime, monospace',
