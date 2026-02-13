@@ -74,24 +74,29 @@ const sendVerificationEmail = async (user, code) => {
             position: relative;
             border-bottom: 6px solid #d4a574;
           }
+          .logo-container {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 25px;
+            position: relative;
+          }
           .logo-circle {
-            width: 160px;
-            height: 160px;
+            width: 180px;
+            height: 180px;
             background: white;
             border-radius: 50%;
-            margin: 0 auto 25px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 6px solid #2C5F7F;
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            padding: 15px;
+            overflow: hidden;
           }
           .logo-circle img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border-radius: 50%;
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            object-position: center;
           }
           .title-main {
             font-size: 48px;
@@ -237,8 +242,10 @@ const sendVerificationEmail = async (user, code) => {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo-circle">
-              <img src="https://jeu-bleu-rouge.onrender.com/logo-bvr.png" alt="Logo BvR">
+            <div class="logo-container">
+              <div class="logo-circle">
+                <img src="https://jeu-bleu-rouge.onrender.com/logo-bvr.png" alt="Logo BvR">
+              </div>
             </div>
             <div class="title-main">
               <span class="title-blue">BLEU</span>
