@@ -629,15 +629,14 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
           <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: '0 auto', display: 'block' }}>
             <circle cx="70" cy="70" r="60" fill="none" stroke="#0f3460" strokeWidth="8" />
             <circle cx="70" cy="70" r="60" fill="none" stroke="#00ff88" strokeWidth="8"
-              strokeDasharray={
-                voteInfo ? (
-                  votingPhase === 'VOTING' && voteInfo.nextVoteStart ? 
-                    `${Math.max(0, ((voteInfo.nextVoteStart - Date.now()) / 120000) * 377)} 377` :
-                    voteInfo.discussionEnd ?
-                      `${Math.max(0, ((voteInfo.discussionEnd - Date.now()) / 120000) * 377)} 377` :
-                      '377 377'
-                ) : '377 377'
-              }
+              strokeDasharray={(() => {
+                if (!voteInfo) return '377 377';
+                const nextVoteTime = voteInfo.nextVoteStart || voteInfo.discussionEnd;
+                if (!nextVoteTime) return '377 377';
+                const timeLeft = nextVoteTime - Date.now();
+                const maxTime = 120000; // 2 minutes max pour le cercle complet
+                return `${Math.max(0, (timeLeft / maxTime) * 377)} 377`;
+              })()}
               strokeLinecap="round"
               transform="rotate(-90 70 70)"
               style={{ 
@@ -648,32 +647,30 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
             <circle cx="70" cy="70" r="50" fill="#16213e" stroke="#ff0" strokeWidth="2"
               style={{ filter: 'drop-shadow(0 0 5px #ff0)' }}
             />
-            <text x="70" y="65" textAnchor="middle" fill="#ff0" fontSize="18" fontFamily="monospace" fontWeight="bold"
+            <text x="70" y="55" textAnchor="middle" fill="#ff0" fontSize="20" fontFamily="monospace" fontWeight="bold"
               style={{ textShadow: '0 0 5px #ff0' }}>
-              {voteInfo ? (
-                votingPhase === 'VOTING' && voteInfo.nextVoteStart ? 
-                  Math.max(0, Math.floor((voteInfo.nextVoteStart - Date.now()) / 1000)) :
-                  voteInfo.discussionEnd ?
-                    Math.max(0, Math.floor((voteInfo.discussionEnd - Date.now()) / 1000)) :
-                    '--'
-              ) : '--'}
+              {(() => {
+                if (!voteInfo) return '--';
+                const nextVoteTime = voteInfo.nextVoteStart || voteInfo.discussionEnd;
+                if (!nextVoteTime) return '--';
+                const timeLeft = Math.max(0, nextVoteTime - Date.now());
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                if (minutes > 0) return minutes;
+                return seconds;
+              })()}
             </text>
-            <text x="70" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
-              SEC
+            <text x="70" y="75" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
+              {(() => {
+                if (!voteInfo) return '';
+                const nextVoteTime = voteInfo.nextVoteStart || voteInfo.discussionEnd;
+                if (!nextVoteTime) return '';
+                const timeLeft = Math.max(0, nextVoteTime - Date.now());
+                const minutes = Math.floor(timeLeft / 60000);
+                return minutes > 0 ? 'MIN' : 'SEC';
+              })()}
             </text>
           </svg>
-          {/* Afficher un message si c'est le dernier vote */}
-          {votingPhase === 'VOTING' && !voteInfo?.nextVoteStart && (
-            <div style={{
-              fontSize: '9px',
-              color: '#ff6b6b',
-              marginTop: '10px',
-              fontWeight: 'bold',
-              textShadow: '0 0 5px #ff6b6b'
-            }}>
-              DERNIER VOTE !
-            </div>
-          )}
         </div>
 
         {/* Indicateurs de phase */}
