@@ -278,7 +278,17 @@ app.get('/', (req, res) => {
   if (require('fs').existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.send('⚠️ Application non construite. Exécutez: npm run build');
+    res.status(500).send('⚠️ Application non construite. Exécutez: npm run build');
+  }
+});
+
+// Route catch-all pour React Router (doit être APRÈS les routes API)
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'client', 'dist', 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(500).send('⚠️ Application non construite. Exécutez: npm run build');
   }
 });
 
