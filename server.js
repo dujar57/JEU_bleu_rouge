@@ -688,6 +688,10 @@ function notifyVotingPhase(gameCode, phase, voteInfo) {
   const game = games[gameCode];
   if (!game) return;
   
+  // Trouver le prochain vote
+  const nextVoteIndex = game.currentVoteNumber + 1;
+  const nextVote = game.phases.voteSchedule[nextVoteIndex];
+  
   game.players.forEach(player => {
     io.to(player.socketId).emit('voting_phase_change', {
       phase: phase,
@@ -695,6 +699,7 @@ function notifyVotingPhase(gameCode, phase, voteInfo) {
       totalVotes: game.phases.numberOfVotes,
       discussionEnd: voteInfo.votingStart,
       votingEnd: voteInfo.endTime,
+      nextVoteStart: nextVote ? nextVote.votingStart : null, // Temps avant le PROCHAIN vote
       message: phase === 'DISCUSSION' 
         ? '💬 Phase de discussion - Préparez vos arguments'
         : '🗳️ Phase de vote - Votez maintenant !'
