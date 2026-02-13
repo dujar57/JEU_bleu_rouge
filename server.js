@@ -1720,7 +1720,9 @@ io.on('connection', (socket) => {
     }
 
     // Envoyer le message à tous les joueurs de la partie avec le numéro anonyme
+    console.log(`💬 Envoi du message à ${game.players.length} joueurs dans la partie ${gameCode}`);
     game.players.forEach(p => {
+      console.log(`  → Envoi à ${p.pseudo} (socketId: ${p.socketId})`);
       io.to(p.socketId).emit('chat_message', {
         playerNumber: chatMessage.playerNumber,
         message: chatMessage.message,
@@ -1728,7 +1730,7 @@ io.on('connection', (socket) => {
       });
     });
 
-    console.log(`💬 Partie ${gameCode} - Joueur ${player.anonymousNumber}: ${message.substring(0, 50)}`);
+    console.log(`💬 Partie ${gameCode} - Joueur ${player.anonymousNumber} (${player.pseudo}): ${message.substring(0, 50)}`);
   });
 
   // ==========================
