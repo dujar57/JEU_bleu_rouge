@@ -948,17 +948,15 @@ function electRepresentants(gameCode) {
   // Élire un représentant bleu aléatoire
   if (blueAlive.length > 0) {
     blueRep = blueAlive[Math.floor(Math.random() * blueAlive.length)];
-    blueRep.role = 'representant';
     blueRep.isRepresentant = true;
-    console.log(`👑 Représentant BLEU élu : Joueur ${blueRep.anonymousNumber} (${blueRep.pseudo})`);
+    console.log(`👑 Représentant BLEU élu : Joueur ${blueRep.anonymousNumber} (${blueRep.pseudo}) - Rôle : ${blueRep.role}`);
   }
   
   // Élire un représentant rouge aléatoire
   if (redAlive.length > 0) {
     redRep = redAlive[Math.floor(Math.random() * redAlive.length)];
-    redRep.role = 'representant';
     redRep.isRepresentant = true;
-    console.log(`👑 Représentant ROUGE élu : Joueur ${redRep.anonymousNumber} (${redRep.pseudo})`);
+    console.log(`👑 Représentant ROUGE élu : Joueur ${redRep.anonymousNumber} (${redRep.pseudo}) - Rôle : ${redRep.role}`);
   }
   
   game.representantElected = true;
@@ -1050,8 +1048,8 @@ function checkVictoryConditions(game) {
   const aliveTraitors = alivePlayers.filter(p => p.isTraitor);
   const blueAlive = alivePlayers.filter(p => p.team === 'bleu' && !p.isTraitor).length;
   const redAlive = alivePlayers.filter(p => p.team === 'rouge' && !p.isTraitor).length;
-  const blueRepAlive = alivePlayers.some(p => p.team === 'bleu' && p.role === 'representant');
-  const redRepAlive = alivePlayers.some(p => p.team === 'rouge' && p.role === 'representant');
+  const blueRepAlive = alivePlayers.some(p => p.team === 'bleu' && p.isRepresentant);
+  const redRepAlive = alivePlayers.some(p => p.team === 'rouge' && p.isRepresentant);
   
   // CONDITION 1 : Les TRAÎTRES gagnent si les deux représentants sont morts ET les deux traîtres sont vivants
   if (aliveTraitors.length === 2 && !blueRepAlive && !redRepAlive) {
@@ -1945,7 +1943,7 @@ io.on('connection', (socket) => {
     }
     
     // Vérifier si la cible est un représentant (immunisé contre les tueurs)
-    if (target.role === 'representant' || target.isRepresentant) {
+    if (target.isRepresentant) {
       socket.emit('error', { message: 'Le représentant est immunisé contre les tueurs !' });
       return;
     }

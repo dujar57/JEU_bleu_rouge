@@ -138,7 +138,6 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         );
         // Mettre à jour le rôle localement
         if (myRole) {
-          myRole.role = 'representant';
           myRole.isRepresentant = true;
           myRole.teamMates = data.teamMates;
         }
@@ -375,20 +374,23 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const getRoleDescription = () => {
     // Si roleInfo existe (nouveau système), l'utiliser
     if (myRole.roleInfo) {
-      return `${myRole.roleInfo.emoji} ${myRole.roleInfo.name} - ${myRole.roleInfo.description}`;
+      const baseRole = `${myRole.roleInfo.emoji} ${myRole.roleInfo.name}`;
+      const isRep = myRole.isRepresentant ? ' 👑 REPRÉSENTANT' : '';
+      return `${baseRole}${isRep} - ${myRole.roleInfo.description}${myRole.isRepresentant ? ' | IMMUNISÉ contre les tueurs' : ''}`;
     }
     
     // Fallback ancien système
     const role = myRole.role;
+    const isRep = myRole.isRepresentant ? ' 👑 REPRÉSENTANT' : '';
     switch (role) {
       case 'representant':
         return '👑 Représentant - Vous représentez votre équipe';
       case 'tueur':
-        return '🔪 Tueur - Vous avez le pouvoir d\'éliminer';
+        return `🔪 Tueur${isRep} - Vous avez le pouvoir d'éliminer${myRole.isRepresentant ? ' | IMMUNISÉ contre les tueurs' : ''}`;
       case 'lambda':
-        return '👤 Membre Lambda - Vous êtes un membre normal';
+        return `👤 Membre Lambda${isRep} - Vous êtes un membre normal${myRole.isRepresentant ? ' | IMMUNISÉ contre les tueurs' : ''}`;
       default:
-        return role;
+        return role + isRep;
     }
   };
 
