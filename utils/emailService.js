@@ -43,7 +43,7 @@ const sendVerificationEmail = async (user, code) => {
   const verificationCode = code;
   
   const mailOptions = {
-    from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
+    from: `"Jeu Bleu vs Rouge" <${process.env.EMAIL_USER}>`,
     to: user.email,
     subject: '🎮 Code de vérification - Jeu Bleu vs Rouge',
     html: `
@@ -53,213 +53,244 @@ const sendVerificationEmail = async (user, code) => {
         <meta charset="UTF-8">
         <style>
           body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #5f9ea0 0%, #4682b4 100%);
             margin: 0;
             padding: 20px;
           }
           .container {
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
-            background: #0f1624;
-            border-radius: 20px;
+            background: #e8d4b8;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border: 8px solid #2C5F7F;
           }
           .header {
-            background: linear-gradient(135deg, #2C5F7F 0%, #1a3a52 50%, #8B2635 100%);
-            padding: 40px 30px;
+            background: linear-gradient(135deg, #5f9ea0 0%, #2C5F7F 100%);
+            padding: 40px 30px 30px;
             text-align: center;
             position: relative;
-            border-bottom: 3px solid rgba(255,255,255,0.1);
+            border-bottom: 6px solid #d4a574;
           }
-          .logo {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 20px;
+          .logo-circle {
+            width: 150px;
+            height: 150px;
             background: white;
             border-radius: 50%;
-            padding: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-          }
-          .title-wrapper {
+            margin: 0 auto 25px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 15px;
-            margin-top: 20px;
+            justify-content: center;
+            border: 6px solid #2C5F7F;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+          }
+          .logo-circle img {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+          }
+          .title-main {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            margin: 20px 0;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
           }
           .title-blue {
-            color: #4A9FD8;
-            font-size: 36px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(74, 159, 216, 0.8);
-            letter-spacing: 3px;
+            color: #2C5F7F;
           }
           .title-vs {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
+            color: #d4a574;
+            font-size: 36px;
+            margin: 0 10px;
           }
           .title-red {
-            color: #D84A4A;
-            font-size: 36px;
+            color: #8B2635;
+          }
+          .subtitle {
+            color: #2C5F7F;
+            font-size: 16px;
             font-weight: bold;
-            text-shadow: 0 0 20px rgba(216, 74, 74, 0.8);
-            letter-spacing: 3px;
+            letter-spacing: 4px;
+            margin-top: 15px;
+            text-transform: uppercase;
           }
           .content {
-            padding: 40px 30px;
-            color: white;
+            padding: 40px 35px;
+            background: #e8d4b8;
           }
           .greeting {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
-            margin-bottom: 20px;
             text-align: center;
-            background: linear-gradient(135deg, #4A9FD8 0%, #D84A4A 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #2C5F7F;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
           }
-          .content p {
-            color: #b3b3b3;
+          .text-block {
+            background: rgba(255,255,255,0.5);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 3px solid #2C5F7F;
+            color: #1a1a1a;
             line-height: 1.8;
-            font-size: 16px;
-            margin: 15px 0;
+            font-size: 15px;
+            text-align: center;
           }
-          .code-section {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 30px;
+          .code-box {
+            background: #2C5F7F;
+            border: 6px solid #8B2635;
+            border-radius: 12px;
+            padding: 35px;
             margin: 30px 0;
             text-align: center;
-            border: 2px solid rgba(255,255,255,0.1);
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.3);
           }
           .code-label {
-            color: #4A9FD8;
+            color: #d4a574;
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 15px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            letter-spacing: 2px;
           }
           .code {
-            font-size: 56px;
+            font-size: 64px;
             font-weight: bold;
-            letter-spacing: 15px;
+            letter-spacing: 18px;
             font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #4A9FD8 0%, #D84A4A 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 30px rgba(74, 159, 216, 0.5);
-            padding: 20px 0;
-            display: inline-block;
+            color: #e8d4b8;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.3);
+            padding: 15px 0;
           }
-          .warning-box {
-            background: rgba(255, 193, 7, 0.1);
-            border-left: 4px solid #ffc107;
-            padding: 20px;
-            margin: 25px 0;
+          .info-box {
+            background: rgba(44, 95, 127, 0.15);
+            border: 3px dashed #2C5F7F;
             border-radius: 8px;
-          }
-          .warning-box p {
-            margin: 0;
-            color: #ffc107;
-            font-size: 14px;
-          }
-          .instruction {
-            background: rgba(74, 159, 216, 0.1);
-            border: 2px dashed #4A9FD8;
-            border-radius: 10px;
             padding: 20px;
             margin: 25px 0;
             text-align: center;
           }
-          .instruction p {
-            margin: 0;
-            color: #4A9FD8;
+          .info-box p {
+            margin: 8px 0;
+            color: #2C5F7F;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
+          }
+          .warning {
+            background: rgba(255, 193, 7, 0.3);
+            border: 3px solid #ffc107;
+            border-radius: 8px;
+            padding: 18px;
+            margin: 25px 0;
+            color: #856404;
+            font-weight: bold;
+            text-align: center;
+          }
+          .game-features {
+            background: rgba(255,255,255,0.4);
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 3px solid #8B2635;
+          }
+          .game-features h3 {
+            color: #8B2635;
+            margin-top: 0;
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-align: center;
+          }
+          .game-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+          }
+          .game-features li {
+            color: #1a1a1a;
+            padding: 8px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(44, 95, 127, 0.2);
+          }
+          .game-features li:last-child {
+            border-bottom: none;
           }
           .footer {
-            background: rgba(0,0,0,0.3);
+            background: #2C5F7F;
             padding: 25px;
             text-align: center;
-            border-top: 2px solid rgba(255,255,255,0.1);
+            border-top: 6px solid #8B2635;
           }
           .footer p {
-            margin: 5px 0;
-            color: #666;
-            font-size: 13px;
-          }
-          .game-info {
-            background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 1px solid rgba(255,255,255,0.1);
-          }
-          .game-info p {
             margin: 8px 0;
-            color: #999;
-            font-size: 14px;
+            color: #d4a574;
+            font-size: 13px;
+            font-weight: bold;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">
-              <img src="https://jeu-bleu-rouge.onrender.com/logo-bvr.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+            <div class="logo-circle">
+              <img src="https://jeu-bleu-rouge.onrender.com/logo-bvr.png" alt="Logo BvR">
             </div>
-            <div class="title-wrapper">
+            <div class="title-main">
               <span class="title-blue">BLEU</span>
-              <span class="title-vs">VS</span>
+              <span class="title-vs">vs</span>
               <span class="title-red">ROUGE</span>
+            </div>
+            <div class="subtitle">
+              INFILTRATION • DÉDUCTION • ÉLIMINATION
             </div>
           </div>
           
           <div class="content">
-            <div class="greeting">Bienvenue ${user.username} ! 🎮</div>
+            <div class="greeting">
+              BIENVENUE ${user.username.toUpperCase()} ! 🎮
+            </div>
             
-            <p style="text-align: center;">
-              Merci de rejoindre <strong>Jeu Bleu vs Rouge</strong> !<br>
-              Le jeu d'infiltration et de déduction ultime où chaque décision compte.
-            </p>
+            <div class="text-block">
+              <strong>Merci de rejoindre le jeu Bleu vs Rouge !</strong><br>
+              Un jeu d'infiltration et de stratégie où chaque décision compte.
+            </div>
             
-            <div class="code-section">
-              <div class="code-label">⚡ Votre Code de Vérification</div>
+            <div class="code-box">
+              <div class="code-label">⚡ VOTRE CODE DE VÉRIFICATION</div>
               <div class="code">${verificationCode}</div>
             </div>
             
-            <div class="instruction">
-              <p>📱 Entrez ce code dans le jeu pour activer votre compte</p>
+            <div class="info-box">
+              <p>📱 ENTREZ CE CODE DANS LE JEU</p>
+              <p>POUR ACTIVER VOTRE COMPTE</p>
             </div>
             
-            <div class="warning-box">
-              <p>⏱️ <strong>Attention :</strong> Ce code expire dans 24 heures</p>
+            <div class="warning">
+              ⏱️ ATTENTION : Ce code expire dans 24 heures
             </div>
             
-            <div class="game-info">
-              <p><strong>🎯 À propos du jeu :</strong></p>
-              <p>• Infiltrez l'équipe adverse</p>
-              <p>• Démasquez les traîtres</p>
-              <p>• Remportez la victoire pour votre équipe</p>
+            <div class="game-features">
+              <h3>🎯 À PROPOS DU JEU</h3>
+              <ul>
+                <li>👥 Infiltrez l'équipe adverse sans vous faire repérer</li>
+                <li>🔍 Démasquez les traîtres cachés dans votre équipe</li>
+                <li>⚔️ Éliminez stratégiquement vos adversaires</li>
+                <li>🏆 Remportez la victoire pour votre équipe</li>
+              </ul>
             </div>
             
-            <p style="text-align: center; font-size: 13px; color: #666; margin-top: 30px;">
-              Vous n'avez pas créé de compte ? Ignorez cet email.
-            </p>
+            <div class="text-block" style="font-size: 13px; margin-top: 30px;">
+              Si vous n'avez pas créé de compte,<br>vous pouvez ignorer cet email.
+            </div>
           </div>
           
           <div class="footer">
-            <p><strong>JEU BLEU VS ROUGE</strong></p>
-            <p>© 2026 - Tous droits réservés</p>
-            <p style="margin-top: 10px;">Email automatique - Ne pas répondre</p>
+            <p>JEU BLEU VS ROUGE</p>
+            <p>© 2026 - STYLE VINTAGE ANNÉES 90</p>
+            <p style="margin-top: 12px; font-size: 11px;">EMAIL AUTOMATIQUE - NE PAS RÉPONDRE</p>
           </div>
         </div>
       </body>
