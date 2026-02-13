@@ -240,7 +240,8 @@ button {
   overflow: hidden;
   letter-spacing: 2px;
   text-transform: uppercase;
-  font-family: 'Special Elite', cursive;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-style: normal;
   box-shadow: 
     0 6px 0 #1a0f0a,
     0 8px 12px rgba(0,0,0,0.3);
