@@ -1069,12 +1069,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                       transition: 'all 0.3s ease'
                     }}
                   >
-                    <div style={{ fontWeight: 'bold' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
                       Joueur {player.anonymousNumber}
                     </div>
-                    <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                      {player.team === 'bleu' ? '🔵' : '🔴'} {player.team}
-                    </div>
+                    {/* Afficher l'équipe uniquement si le joueur est représentant ET c'est un membre de son équipe */}
+                    {myRole.isRepresentant && player.team === myRole.team && (
+                      <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
+                        {player.team === 'bleu' ? '🔵' : '🔴'} Votre équipe
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1483,6 +1486,25 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
               {activePower === 'convert' && '🧙 Choisir un joueur à convertir'}
               {activePower === 'steal_pseudo' && '🎭 Choisir un pseudo à voler'}
             </h2>
+
+            {/* Avertissement pour le tueur */}
+            {activePower === 'kill' && (
+              <div style={{
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                border: '3px solid #d32f2f',
+                borderRadius: '10px',
+                padding: '15px',
+                marginBottom: '20px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(211,47,47,0.4)'
+              }}>
+                ⚠️ ATTENTION : Vous ne connaissez PAS l'équipe des joueurs !<br/>
+                Si vous tuez quelqu'un de VOTRE équipe, vous mourrez aussi ! 💀
+              </div>
+            )}
 
             {/* Question du journaliste */}
             {activePower === 'ask_question' && (
