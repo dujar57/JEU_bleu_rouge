@@ -75,8 +75,8 @@ const sendVerificationEmail = async (user, code) => {
             border-bottom: 6px solid #d4a574;
           }
           .logo-circle {
-            width: 150px;
-            height: 150px;
+            width: 160px;
+            height: 160px;
             background: white;
             border-radius: 50%;
             margin: 0 auto 25px;
@@ -84,12 +84,14 @@ const sendVerificationEmail = async (user, code) => {
             align-items: center;
             justify-content: center;
             border: 6px solid #2C5F7F;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            padding: 15px;
           }
           .logo-circle img {
-            width: 130px;
-            height: 130px;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
+            border-radius: 50%;
           }
           .title-main {
             font-size: 48px;
