@@ -1677,7 +1677,7 @@ io.on('connection', (socket) => {
     
     // Trouver le joueur qui envoie le message
     const player = game.players.find(p => p.socketId === socket.id);
-    if (!player || !player.isAlive) {
+    if (!player) {
       socket.emit('error', { message: 'Vous ne pouvez pas envoyer de messages.' });
       return;
     }
