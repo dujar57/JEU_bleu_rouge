@@ -615,42 +615,73 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         </div>
 
         {/* Timer 2: Prochain vote */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            fontSize: '10px', 
-            color: '#ff0', 
-            letterSpacing: '1px',
-            marginBottom: '10px',
-            textShadow: '0 0 5px #ff0',
-            fontWeight: 'bold'
-          }}>
-            NEXT VOTE
+        {votingPhase !== 'VOTING' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              fontSize: '10px', 
+              color: '#ff0', 
+              letterSpacing: '1px',
+              marginBottom: '10px',
+              textShadow: '0 0 5px #ff0',
+              fontWeight: 'bold'
+            }}>
+              NEXT VOTE
+            </div>
+            <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: '0 auto', display: 'block' }}>
+              <circle cx="70" cy="70" r="60" fill="none" stroke="#0f3460" strokeWidth="8" />
+              <circle cx="70" cy="70" r="60" fill="none" stroke="#00ff88" strokeWidth="8"
+                strokeDasharray={voteInfo && voteInfo.discussionEnd ? 
+                  `${Math.max(0, ((voteInfo.discussionEnd - Date.now()) / 120000) * 377)} 377` : '377 377'}
+                strokeLinecap="round"
+                transform="rotate(-90 70 70)"
+                style={{ 
+                  transition: 'stroke-dasharray 1s linear',
+                  filter: 'drop-shadow(0 0 8px #00ff88)'
+                }}
+              />
+              <circle cx="70" cy="70" r="50" fill="#16213e" stroke="#ff0" strokeWidth="2"
+                style={{ filter: 'drop-shadow(0 0 5px #ff0)' }}
+              />
+              <text x="70" y="65" textAnchor="middle" fill="#ff0" fontSize="18" fontFamily="monospace" fontWeight="bold"
+                style={{ textShadow: '0 0 5px #ff0' }}>
+                {voteInfo && voteInfo.discussionEnd ? 
+                  Math.max(0, Math.floor((voteInfo.discussionEnd - Date.now()) / 1000)) : '--'}
+              </text>
+              <text x="70" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
+                SEC
+              </text>
+            </svg>
           </div>
-          <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: '0 auto', display: 'block' }}>
-            <circle cx="70" cy="70" r="60" fill="none" stroke="#0f3460" strokeWidth="8" />
-            <circle cx="70" cy="70" r="60" fill="none" stroke="#00ff88" strokeWidth="8"
-              strokeDasharray={voteInfo && voteInfo.discussionEnd ? 
-                `${((voteInfo.discussionEnd - Date.now()) / 120000) * 377} 377` : '377 377'}
-              strokeLinecap="round"
-              transform="rotate(-90 70 70)"
-              style={{ 
-                transition: 'stroke-dasharray 1s linear',
-                filter: 'drop-shadow(0 0 8px #00ff88)'
-              }}
-            />
-            <circle cx="70" cy="70" r="50" fill="#16213e" stroke="#ff0" strokeWidth="2"
-              style={{ filter: 'drop-shadow(0 0 5px #ff0)' }}
-            />
-            <text x="70" y="65" textAnchor="middle" fill="#ff0" fontSize="18" fontFamily="monospace" fontWeight="bold"
-              style={{ textShadow: '0 0 5px #ff0' }}>
-              {voteInfo && voteInfo.discussionEnd ? 
-                Math.floor((voteInfo.discussionEnd - Date.now()) / 1000) : '--'}
-            </text>
-            <text x="70" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontFamily="monospace">
-              SEC
-            </text>
-          </svg>
-        </div>
+        )}
+
+        {/* Pendant le vote : afficher un message */}
+        {votingPhase === 'VOTING' && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#e94560', 
+              letterSpacing: '1px',
+              marginBottom: '10px',
+              textShadow: '0 0 5px #e94560',
+              fontWeight: 'bold',
+              animation: 'pulse 2s infinite'
+            }}>
+              ⏳ VOTE EN COURS
+            </div>
+            <div style={{
+              fontSize: '10px',
+              color: '#fff',
+              opacity: 0.7,
+              marginTop: '10px'
+            }}>
+              Temps restant pour voter :<br/>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff0' }}>
+                {voteInfo && voteInfo.votingEnd ? 
+                  Math.max(0, Math.floor((voteInfo.votingEnd - Date.now()) / 1000)) : '--'}
+              </span> sec
+            </div>
+          </div>
+        )}
 
         {/* Indicateurs de phase */}
         <div style={{ 
