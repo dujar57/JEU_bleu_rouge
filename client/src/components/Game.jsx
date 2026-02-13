@@ -18,6 +18,21 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const chatEndRef = useState(null);
   const [isEliminated, setIsEliminated] = useState(false); // État spectateur
+  
+  // États pour les pouvoirs spéciaux
+  const [powerTarget, setPowerTarget] = useState(null);
+  const [showPowerModal, setShowPowerModal] = useState(false);
+  const [activePower, setActivePower] = useState(null);
+  const [detectiveInfo, setDetectiveInfo] = useState([]);
+  const [journalistQuestion, setJournalistQuestion] = useState('');
+  
+  // États pour le Boulanger
+  const [saveableTargets, setSaveableTargets] = useState([]);
+  const [showBakerModal, setShowBakerModal] = useState(false);
+  
+  // État pour joueur réanimé
+  const [canRevivedKill, setCanRevivedKill] = useState(false);
+  const [showRevivedKillModal, setShowRevivedKillModal] = useState(false);
 
   // Système de notifications flottantes
   const addNotification = (message, type = 'info', duration = 5000) => {
@@ -111,6 +126,36 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       }, 5000);
     });
 
+    // Écouter l'élection du représentant
+    socket.on('representant_elected', (data) => {
+      if (data.youAreRep) {
+        // Le joueur est élu représentant !
+        addNotification('👑 VOUS AVEZ ÉTÉ ÉLU REPRÉSENTANT ! Vous connaissez votre équipe et êtes immunisé contre les tueurs.', 'success', 10000);
+        sendNotification(
+          '👑 Vous êtes Représentant !',
+          'Vous connaissez tous les membres de votre équipe',
+          'default'
+        );
+        // Mettre à jour le rôle localement
+        if (myRole) {
+          myRole.role = 'representant';
+          myRole.isRepresentant = true;
+          myRole.teamMates = data.teamMates;
+        }
+      } else {
+        addNotification(
+          `👑 ${data.message}\nBleu: Joueur #${data.blueRep} | Rouge: Joueur #${data.redRep}`,
+          'info',
+          8000
+        );
+        sendNotification(
+          'Représentants Élus',
+          'Les chefs d\'équipe ont été désignés !',
+          'default'
+        );
+      }
+    });
+
     // Écouter les messages de chat
     socket.on('chat_message', (data) => {
       setMessages(prev => [...prev, data]);
@@ -131,11 +176,123 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
       }, 100);
     });
 
+    // Écouter les informations des détecteurs
+    socket.on('detective_info', (data) => {
+      const info = {
+        id: Date.now(),
+        type: data.type,
+        message: data.message,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setDetectiveInfo(prev => [info, ...prev].slice(0, 20)); // Garder 20 derniers
+      
+      addNotification(data.message, 'info', 10000);
+      sendNotification(
+        data.type === 'player' ? '🔍 Détection Joueur' : '🕵️ Détection Métier',
+        data.message,
+        'default'
+      );
+    });
+
+    // Écouter les actions confirmées
+    socket.on('action_confirmed', (data) => {
+      addNotification(data.message, 'success', 5000);
+    });
+
+    // Écouter les révélations de tueur
+    socket.on('killer_revealed', (data) => {
+      addNotification(data.message, 'warning', 10000);
+      sendNotification('🛡️ Tueur Révélé !', data.message, 'default');
+    });
+
+    // Écouter les actions de tueur
+    socket.on('killer_action', (data) => {
+      setEliminationMessage(data);
+      addNotification(data.message, 'warning', 8000);
+      
+      setTimeout(() => {
+        setEliminationMessage(null);
+      }, 5000);
+    });
+
+    // Écouter les réponses du journaliste
+    socket.on('journalist_answer', (data) => {
+      addNotification(
+        `📰 ${data.question}\n➡️ Réponse: ${data.answer}\n${data.warning}`,
+        'info',
+        15000
+      );
+    });
+
+    // Écouter les résultats d'enquête du stalker
+    socket.on('investigation_result', (data) => {
+      addNotification(data.message, 'info', 10000);
+    });
+
+    // Écouter les échanges de pseudos
+    socket.on('pseudos_swapped', (data) => {
+      addNotification(data.message, 'warning', 8000);
+    });
+
+    // Écouter les conversions du guru
+    socket.on('conversion_success', (data) => {
+      addNotification(data.message, 'success', 10000);
+      sendNotification('🧙 Conversion Réussie !', data.message, 'default');
+    });
+
+    socket.on('conversion_failed', (data) => {
+      addNotification(data.message, 'warning', 5000);
+    });
+
+    socket.on('you_are_converted', (data) => {
+      addNotification(data.message, 'warning', 15000);
+      sendNotification('🧙 Vous êtes Converti !', data.message, 'default');
+      // Mettre à jour le rôle localement
+      if (myRole) {
+        myRole.isTraitor = true;
+      }
+    });
+
+    // Écouter le vol de pseudo
+    socket.on('pseudo_stolen', (data) => {
+      addNotification(data.message, 'warning', 8000);
+    });
+
+    // Écouter l'opportunité de sauver (BOULANGER)
+    socket.on('baker_can_save', (data) => {
+      setSaveableTargets(data.targets);
+      setShowBakerModal(true);
+      addNotification(data.message, 'success', 30000);
+      sendNotification('🍞 BOULANGER !', data.message, 'default');
+    });
+
+    // Écouter la réanimation
+    socket.on('you_are_revived', (data) => {
+      setCanRevivedKill(true);
+      setShowRevivedKillModal(true);
+      addNotification(data.message, 'success', 30000);
+      sendNotification('🍞 VOUS ÊTES SAUVÉ !', data.message, 'default');
+    });
+
     return () => {
       socket.off('voting_phase_change');
       socket.off('vote_confirmed');
       socket.off('vote_results');
+      socket.off('representant_elected');
       socket.off('chat_message');
+      socket.off('detective_info');
+      socket.off('action_confirmed');
+      socket.off('killer_revealed');
+      socket.off('killer_action');
+      socket.off('journalist_answer');
+      socket.off('investigation_result');
+      socket.off('pseudos_swapped');
+      socket.off('conversion_success');
+      socket.off('conversion_failed');
+      socket.off('you_are_converted');
+      socket.off('pseudo_stolen');
+      socket.off('baker_can_save');
+      socket.off('you_are_revived');
     };
   }, [socket, showChat]);
 
@@ -215,7 +372,14 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
   const teamEmoji = myRole.team === 'bleu' ? '🔵' : '🔴';
   const teamName = myRole.team === 'bleu' ? 'ÉQUIPE BLEUE' : 'ÉQUIPE ROUGE';
 
-  const getRoleDescription = (role) => {
+  const getRoleDescription = () => {
+    // Si roleInfo existe (nouveau système), l'utiliser
+    if (myRole.roleInfo) {
+      return `${myRole.roleInfo.emoji} ${myRole.roleInfo.name} - ${myRole.roleInfo.description}`;
+    }
+    
+    // Fallback ancien système
+    const role = myRole.role;
     switch (role) {
       case 'representant':
         return '👑 Représentant - Vous représentez votre équipe';
@@ -267,6 +431,91 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
     if (!showChat) {
       setUnreadCount(0);
     }
+  };
+
+  // Fonctions pour les pouvoirs spéciaux
+  const usePower = (powerName, target = null) => {
+    if (!gameCode || !socket) return;
+
+    switch (powerName) {
+      case 'protect':
+        if (target) {
+          socket.emit('protect_player', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'crypt':
+        if (target) {
+          socket.emit('crypt_player', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'kill':
+        if (target) {
+          socket.emit('use_killer_power', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'ask_question':
+        if (target && journalistQuestion.trim()) {
+          socket.emit('ask_question', { 
+            gameCode, 
+            targetSocketId: target,
+            question: journalistQuestion.trim()
+          });
+          setJournalistQuestion('');
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'investigate':
+        if (target) {
+          socket.emit('investigate_name', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'swap_pseudos':
+        socket.emit('swap_pseudos', { gameCode });
+        break;
+        
+      case 'convert':
+        if (target) {
+          socket.emit('convert_player', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+        
+      case 'steal_pseudo':
+        if (target) {
+          socket.emit('steal_pseudo', { gameCode, targetSocketId: target });
+          setShowPowerModal(false);
+        }
+        break;
+    }
+  };
+
+  const openPowerModal = (powerName) => {
+    setActivePower(powerName);
+    setShowPowerModal(true);
+    setPowerTarget(null);
+  };
+
+  // Fonctions BOULANGER
+  const savePlayer = (targetSocketId) => {
+    if (!gameCode || !socket || !targetSocketId) return;
+    socket.emit('save_player', { gameCode, targetSocketId });
+    setShowBakerModal(false);
+  };
+
+  const revivedKill = (targetSocketId) => {
+    if (!gameCode || !socket || !targetSocketId) return;
+    socket.emit('revived_kill', { gameCode, targetSocketId });
+    setShowRevivedKillModal(false);
+    setCanRevivedKill(false);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -438,7 +687,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
             <div style={{ fontSize: '14px', color: '#999', marginTop: '5px' }}>
               Infiltré dans : {teamEmoji} {teamName}
             </div>
-            <div className="role">{getRoleDescription(myRole.role)} (couverture)</div>
+            <div className="role">{getRoleDescription()} (couverture)</div>
             {myRole.traitorInfo && (
               <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(139, 0, 255, 0.1)', borderRadius: '8px' }}>
                 <div style={{ fontSize: '14px', color: '#8B00FF', marginBottom: '5px' }}>🤝 Votre partenaire traître :</div>
@@ -457,7 +706,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
         ) : (
           <>
             <div className="team">{teamEmoji} {teamName}</div>
-            <div className="role">{getRoleDescription(myRole.role)}</div>
+            <div className="role">{getRoleDescription()}</div>
           </>
         )}
         {myRole.munitions > 0 && (
@@ -465,7 +714,237 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
             💣 Munitions : {myRole.munitions}
           </div>
         )}
+        
+        {/* Affichage pour les Amoureux */}
+        {myRole.isLover && myRole.loverRealName && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '12px', 
+            background: 'linear-gradient(135deg, rgba(233, 30, 99, 0.2) 0%, rgba(156, 39, 176, 0.2) 100%)',
+            border: '2px solid rgba(233, 30, 99, 0.5)',
+            borderRadius: '10px'
+          }}>
+            <div style={{ fontSize: '16px', color: '#E91E63', marginBottom: '5px' }}>
+              💕 VOUS ÊTES AMOUREUX !
+            </div>
+            <div style={{ fontSize: '14px', color: '#fff' }}>
+              Votre partenaire : <strong>{myRole.loverRealName}</strong>
+            </div>
+            <div style={{ fontSize: '12px', color: '#ddd', marginTop: '5px' }}>
+              ⚠️ Si l'un meurt, l'autre meurt aussi. Pour gagner, soyez les 2 derniers survivants !
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Interface des Pouvoirs Spéciaux */}
+      {myRole.roleInfo && myRole.roleInfo.powers && !isEliminated && (
+        <div className="role-card" style={{ marginTop: '15px' }}>
+          <h2>{myRole.roleInfo.emoji} Pouvoirs Spéciaux</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Gardien de la Paix */}
+            {myRole.roleInfo.powers.protect && (
+              <button 
+                onClick={() => openPowerModal('protect')}
+                style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                🛡️ Protéger un joueur
+              </button>
+            )}
+            
+            {/* Cyberpompier */}
+            {myRole.roleInfo.powers.crypt && (
+              <button 
+                onClick={() => openPowerModal('crypt')}
+                style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                🔒 Crypter un joueur
+              </button>
+            )}
+            
+            {/* Tueur */}
+            {myRole.roleInfo.powers.kill && myRole.munitions > 0 && (
+              <button 
+                onClick={() => openPowerModal('kill')}
+                style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #F44336 0%, #D32F2F 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                🔪 Tuer un joueur ({myRole.munitions} munitions)
+              </button>
+            )}
+            
+            {/* Journaliste */}
+            {myRole.roleInfo.powers.askQuestion && (
+              <button 
+                onClick={() => openPowerModal('ask_question')}
+                style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                📰 Poser une question
+              </button>
+            )}
+            
+            {/* Stalker */}
+            {myRole.roleInfo.powers.investigate && (
+              <button 
+                onClick={() => openPowerModal('investigate')}
+                style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                🔎 Enquêter sur un joueur
+              </button>
+            )}
+            
+            {/* Hacker */}
+            {myRole.roleInfo.powers.swapPseudos && (
+              <button 
+                onClick={() => usePower('swap_pseudos')}
+                disabled={myRole.powerUses && myRole.powerUses.swapPseudos >= 1}
+                style={{
+                  padding: '12px',
+                  background: myRole.powerUses && myRole.powerUses.swapPseudos >= 1 
+                    ? '#666' 
+                    : 'linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: myRole.powerUses && myRole.powerUses.swapPseudos >= 1 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  opacity: myRole.powerUses && myRole.powerUses.swapPseudos >= 1 ? 0.5 : 1
+                }}
+              >
+                💻 Échanger les pseudos ({myRole.powerUses?.swapPseudos || 0}/1)
+              </button>
+            )}
+            
+            {/* Guru */}
+            {myRole.roleInfo.powers.convert && (
+              <button 
+                onClick={() => openPowerModal('convert')}
+                disabled={myRole.powerUses && myRole.powerUses.convert >= 1}
+                style={{
+                  padding: '12px',
+                  background: myRole.powerUses && myRole.powerUses.convert >= 1
+                    ? '#666'
+                    : 'linear-gradient(135deg, #673AB7 0%, #512DA8 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: myRole.powerUses && myRole.powerUses.convert >= 1 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  opacity: myRole.powerUses && myRole.powerUses.convert >= 1 ? 0.5 : 1
+                }}
+              >
+                🧙 Convertir un joueur ({myRole.powerUses?.convert || 0}/1)
+              </button>
+            )}
+            
+            {/* Usurpateur */}
+            {myRole.roleInfo.powers.stealPseudo && (
+              <button 
+                onClick={() => openPowerModal('steal_pseudo')}
+                disabled={myRole.powerUses && myRole.powerUses.stealPseudo >= 1}
+                style={{
+                  padding: '12px',
+                  background: myRole.powerUses && myRole.powerUses.stealPseudo >= 1
+                    ? '#666'
+                    : 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+                  border: '2px solid #E8D5B7',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: myRole.powerUses && myRole.powerUses.stealPseudo >= 1 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  opacity: myRole.powerUses && myRole.powerUses.stealPseudo >= 1 ? 0.5 : 1
+                }}
+              >
+                🎭 Voler un pseudo ({myRole.powerUses?.stealPseudo || 0}/1)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Panel d'informations des Détecteurs */}
+      {myRole.roleInfo && (myRole.roleInfo.powers?.detectPlayers || myRole.roleInfo.powers?.detectJobs) && detectiveInfo.length > 0 && (
+        <div className="role-card" style={{ marginTop: '15px', maxHeight: '300px', overflow: 'auto' }}>
+          <h2>🔍 Informations de Détection</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {detectiveInfo.map(info => (
+              <div 
+                key={info.id}
+                style={{
+                  padding: '10px',
+                  background: 'rgba(103, 126, 234, 0.1)',
+                  border: '1px solid rgba(103, 126, 234, 0.3)',
+                  borderRadius: '6px',
+                  fontSize: '13px'
+                }}
+              >
+                <div style={{ color: '#667eea', fontSize: '11px', marginBottom: '4px' }}>
+                  {info.timestamp}
+                </div>
+                <div style={{ color: '#fff' }}>
+                  {info.message}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bandeau Mode Spectateur */}
       {isEliminated && (
@@ -903,7 +1382,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
             <input
               type="text"
               value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
+              onChange={e => setCurrentMessage(e.target.value)}
               placeholder={window.innerWidth < 768 ? "Message..." : "Écrivez votre message..."}
               maxLength={200}
               autoFocus={window.innerWidth >= 768}
@@ -918,14 +1397,15 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                 fontFamily: 'Courier Prime, monospace',
                 transition: 'border-color 0.2s, box-shadow 0.2s'
               }}
-              onFocus={(e) => {
+              onFocus={e => {
                 e.target.style.borderColor = '#667eea';
                 e.target.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.2)';
               }}
-              onBlur={(e) => {
+              onBlur={e => {
                 e.target.style.borderColor = '#2C5F7F';
                 e.target.style.boxShadow = 'none';
               }}
+              disabled={false}
             />
             <button
               type="submit"
@@ -949,13 +1429,13 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                 justifyContent: 'center'
               }}
               disabled={!currentMessage.trim()}
-              onMouseEnter={(e) => {
+              onMouseEnter={e => {
                 if (currentMessage.trim()) {
                   e.target.style.transform = 'scale(1.05)';
                   e.target.style.boxShadow = '0 6px 20px rgba(102,126,234,0.5)';
                 }
               }}
-              onMouseLeave={(e) => {
+              onMouseLeave={e => {
                 e.target.style.transform = 'scale(1)';
                 e.target.style.boxShadow = currentMessage.trim() ? '0 4px 12px rgba(102,126,234,0.4)' : 'none';
               }}
@@ -963,6 +1443,321 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
               ➤
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Modal de sélection de cible pour les pouvoirs */}
+      {showPowerModal && activePower && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          animation: 'fadeIn 0.3s ease-out'
+        }} onClick={() => setShowPowerModal(false)}>
+          <div style={{
+            background: '#E8D5B7',
+            border: '6px solid #2C5F7F',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '20px', color: '#2C5F7F', textAlign: 'center' }}>
+              {activePower === 'protect' && '🛡️ Choisir un joueur à protéger'}
+              {activePower === 'crypt' && '🔒 Choisir un joueur à crypter'}
+              {activePower === 'kill' && '🔪 Choisir une cible à éliminer'}
+              {activePower === 'ask_question' && '📰 Poser une question à un joueur'}
+              {activePower === 'investigate' && '🔎 Enquêter sur un joueur'}
+              {activePower === 'convert' && '🧙 Choisir un joueur à convertir'}
+              {activePower === 'steal_pseudo' && '🎭 Choisir un pseudo à voler'}
+            </h2>
+
+            {/* Question du journaliste */}
+            {activePower === 'ask_question' && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#2C5F7F' }}>
+                  Votre question (max 100 caractères) :
+                </label>
+                <input
+                  type="text"
+                  value={journalistQuestion}
+                  onChange={(e) => setJournalistQuestion(e.target.value.slice(0, 100))}
+                  placeholder="Posez une question..."
+                  maxLength={100}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '3px solid #2C5F7F',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    fontFamily: 'Courier Prime, monospace'
+                  }}
+                />
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                  {journalistQuestion.length}/100
+                </div>
+              </div>
+            )}
+
+            {/* Liste des joueurs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {gameData.players.filter(p => p.isAlive && p.pseudo !== pseudo).map(player => (
+                <button
+                  key={player.socketId}
+                  onClick={() => setPowerTarget(player.socketId)}
+                  style={{
+                    padding: '15px',
+                    background: powerTarget === player.socketId 
+                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                      : 'white',
+                    border: `3px solid ${powerTarget === player.socketId ? '#667eea' : '#2C5F7F'}`,
+                    borderRadius: '10px',
+                    color: powerTarget === player.socketId ? 'white' : '#2C5F7F',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Joueur {player.anonymousNumber}</span>
+                    {powerTarget === player.socketId && <span>✓</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Boutons d'action */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  if (powerTarget) {
+                    usePower(activePower, powerTarget);
+                  }
+                }}
+                disabled={!powerTarget || (activePower === 'ask_question' && !journalistQuestion.trim())}
+                style={{
+                  flex: 1,
+                  padding: '15px',
+                  background: (!powerTarget || (activePower === 'ask_question' && !journalistQuestion.trim()))
+                    ? '#ccc'
+                    : 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                  border: '3px solid #2C5F7F',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: (!powerTarget || (activePower === 'ask_question' && !journalistQuestion.trim()))
+                    ? 'not-allowed'
+                    : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Confirmer
+              </button>
+              <button
+                onClick={() => setShowPowerModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '15px',
+                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                  border: '3px solid #2C5F7F',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal BOULANGER - Sauver un joueur */}
+      {showBakerModal && saveableTargets.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          animation: 'fadeIn 0.3s ease-out'
+        }} onClick={() => setShowBakerModal(false)}>
+          <div style={{
+            background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+            border: '6px solid #2C5F7F',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '20px', color: 'white', textAlign: 'center' }}>
+              🍞 BOULANGER - Sauver un joueur !
+            </h2>
+            <p style={{ color: 'white', marginBottom: '20px', textAlign: 'center', fontSize: '14px' }}>
+              Un membre de votre équipe va être éliminé ! Vous avez 30 secondes pour le sauver.
+              Le joueur sauvé pourra tuer quelqu'un en représailles !
+            </p>
+
+            {/* Liste des joueurs sauvables */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {saveableTargets.map(target => {
+                const player = gameData.players.find(p => p.socketId === target.socketId);
+                return player ? (
+                  <button
+                    key={target.socketId}
+                    onClick={() => savePlayer(target.socketId)}
+                    style={{
+                      padding: '15px',
+                      background: 'white',
+                      border: '3px solid #2C5F7F',
+                      borderRadius: '10px',
+                      color: '#2C5F7F',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)';
+                      e.target.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'white';
+                      e.target.style.color = '#2C5F7F';
+                    }}
+                  >
+                    🍞 Sauver le Joueur #{player.anonymousNumber}
+                  </button>
+                ) : null;
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowBakerModal(false)}
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                border: '3px solid #2C5F7F',
+                borderRadius: '10px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Ne pas sauver
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal JOUEUR SAUVÉ - Tuer en représailles */}
+      {showRevivedKillModal && canRevivedKill && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          animation: 'fadeIn 0.3s ease-out'
+        }} onClick={() => setShowRevivedKillModal(false)}>
+          <div style={{
+            background: 'linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%)',
+            border: '6px solid #2C5F7F',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 0 0 4px #E8D5B7, 0 15px 50px rgba(0,0,0,0.5)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '20px', color: 'white', textAlign: 'center' }}>
+              🍞 VOUS ÊTES SAUVÉ !
+            </h2>
+            <p style={{ color: 'white', marginBottom: '20px', textAlign: 'center', fontSize: '14px' }}>
+              Un boulanger vous a sauvé de l'élimination ! Vous pouvez maintenant TUER UN JOUEUR en représailles.
+              ⚠️ Vous ne pouvez pas tuer le boulanger qui vous a sauvé.
+            </p>
+
+            {/* Liste des joueurs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {gameData.players.filter(p => p.isAlive && p.pseudo !== pseudo).map(player => (
+                <button
+                  key={player.socketId}
+                  onClick={() => revivedKill(player.socketId)}
+                  style={{
+                    padding: '15px',
+                    background: 'white',
+                    border: '3px solid #2C5F7F',
+                    borderRadius: '10px',
+                    color: '#2C5F7F',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'linear-gradient(135deg, #F44336 0%, #D32F2F 100%)';
+                    e.target.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'white';
+                    e.target.style.color = '#2C5F7F';
+                  }}
+                >
+                  ☠️ Tuer le Joueur #{player.anonymousNumber}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowRevivedKillModal(false)}
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: 'linear-gradient(135deg, #666 0%, #444 100%)',
+                border: '3px solid #2C5F7F',
+                borderRadius: '10px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Ne pas tuer (pour l'instant)
+            </button>
+          </div>
         </div>
       )}
 

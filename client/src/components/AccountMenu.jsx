@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import secureFetch from '../utils/api';
 
-export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csrfToken }) {
+export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csrfToken, onUserUpdate }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [matchHistory, setMatchHistory] = useState([]);
   const [currentGames, setCurrentGames] = useState([]);
@@ -97,7 +97,8 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
         // Mettre à jour le localStorage
         const updatedUser = { ...user, ...data.user };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
+        // Synchroniser l'état utilisateur dans le parent
+        if (onUserUpdate) onUserUpdate(updatedUser);
         // Réinitialiser le formulaire
         setFormData({
           username: data.user.username,
@@ -106,13 +107,8 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
           newPassword: '',
           confirmPassword: ''
         });
-        
         setEditMode(false);
-        
-        // Recharger après 2 secondes pour afficher le nouveau profil
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        // Plus besoin de reload, l'état est synchronisé
       } else {
         setUpdateError(data.error || 'Erreur lors de la mise à jour');
       }

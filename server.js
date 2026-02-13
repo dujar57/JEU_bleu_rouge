@@ -34,6 +34,7 @@ const {
   validatePlayerId,
   checkRateLimit
 } = require('./utils/socketValidation');
+const { ROLES, assignRoles, getRoleInfo, canUsePower } = require('./utils/roles');
 
 const app = express();
 
@@ -424,6 +425,74 @@ setInterval(() => {
   }
 }, 5000); // Vérification toutes les 5 secondes
 
+// Système automatique de DÉTECTEURS (envoie des infos aléatoires)
+setInterval(() => {
+  for (const gameCode in games) {
+    const game = games[gameCode];
+    
+    if (game.status !== 'PLAYING') continue;
+    
+    const detecteursJoueurs = game.players.filter(p => p.isAlive && p.role === 'detecteur_joueurs');
+    const detecteursMetiers = game.players.filter(p => p.isAlive && p.role === 'detecteur_metiers');
+    
+    // Détecteurs de joueurs : envoie Nom réel → Pseudo
+    detecteursJoueurs.forEach(detecteur => {
+      // 30% de chance d'envoyer une info
+      if (Math.random() < 0.3) {
+        const alivePlayers = game.players.filter(p => p.isAlive && p.socketId !== detecteur.socketId);
+        if (alivePlayers.length > 0) {
+          const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+          
+          // AGENT DOUBLE : Apparaît dans l'équipe adverse
+          let displayedTeam = target.team;
+          if (target.role === 'agent_double') {
+            displayedTeam = target.team === 'bleu' ? 'rouge' : 'bleu';
+          }
+          
+          io.to(detecteur.socketId).emit('detective_info', {
+            type: 'player',
+            realName: target.pseudo, // Nom réel
+            anonymousNumber: target.anonymousNumber, // Pseudo dans le jeu
+            team: displayedTeam,
+            message: `🔍 DÉTECTION : ${target.pseudo} est le Joueur #${target.anonymousNumber} (Équipe ${displayedTeam === 'bleu' ? '🔵 Bleue' : '🔴 Rouge'})`
+          });
+          
+          console.log(`🔍 Détecteur Joueurs (${detecteur.pseudo}) a reçu : ${target.pseudo} = Joueur #${target.anonymousNumber} ${target.role === 'agent_double' ? '(AGENT DOUBLE - fausse équipe)' : ''}`);
+        }
+      }
+    });
+    
+    // Détecteurs de métiers : envoie Rôle → Pseudo
+    detecteursMetiers.forEach(detecteur => {
+      // 30% de chance d'envoyer une info
+      if (Math.random() < 0.3) {
+        const alivePlayers = game.players.filter(p => p.isAlive && p.socketId !== detecteur.socketId);
+        if (alivePlayers.length > 0) {
+          const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+          const roleInfo = getRoleInfo(target.role);
+          
+          // AGENT DOUBLE : Apparaît dans l'équipe adverse
+          let displayedTeam = target.team;
+          if (target.role === 'agent_double') {
+            displayedTeam = target.team === 'bleu' ? 'rouge' : 'bleu';
+          }
+          
+          io.to(detecteur.socketId).emit('detective_info', {
+            type: 'role',
+            anonymousNumber: target.anonymousNumber,
+            role: roleInfo.name,
+            roleEmoji: roleInfo.emoji,
+            team: displayedTeam,
+            message: `🕵️ DÉTECTION : Le Joueur #${target.anonymousNumber} est ${roleInfo.emoji} ${roleInfo.name} (Équipe ${displayedTeam === 'bleu' ? '🔵 Bleue' : '🔴 Rouge'})`
+          });
+          
+          console.log(`🕵️ Détecteur Métiers (${detecteur.pseudo}) a reçu : Joueur #${target.anonymousNumber} = ${roleInfo.name} ${target.role === 'agent_double' ? '(AGENT DOUBLE - fausse équipe)' : ''}`);
+        }
+      }
+    });
+  }
+}, 15000); // Toutes les 15 secondes
+
 // Fonction pour terminer une partie par timeout
 async function endGameByTimeout(gameCode) {
   const game = games[gameCode];
@@ -644,16 +713,24 @@ function processVoteResults(gameCode) {
   const blueAlive = alivePlayers.filter(p => p.team === 'bleu' && p.isAlive);
   const redAlive = alivePlayers.filter(p => p.team === 'rouge' && p.isAlive);
   
-  // Compter les votes des BLEUS
+  // Compter les votes des BLEUS (en excluant les joueurs cryptés)
   const blueVoteCount = {};
   for (const targetId in game.blueVotes) {
-    blueVoteCount[targetId] = game.blueVotes[targetId].length;
+    const target = game.players.find(p => p.socketId === targetId);
+    // Si la cible est cryptée, les votes ne comptent pas
+    if (target && !target.crypted) {
+      blueVoteCount[targetId] = game.blueVotes[targetId].length;
+    }
   }
   
-  // Compter les votes des ROUGES
+  // Compter les votes des ROUGES (en excluant les joueurs cryptés)
   const redVoteCount = {};
   for (const targetId in game.redVotes) {
-    redVoteCount[targetId] = game.redVotes[targetId].length;
+    const target = game.players.find(p => p.socketId === targetId);
+    // Si la cible est cryptée, les votes ne comptent pas
+    if (target && !target.crypted) {
+      redVoteCount[targetId] = game.redVotes[targetId].length;
+    }
   }
   
   const deadPlayers = [];
@@ -661,9 +738,55 @@ function processVoteResults(gameCode) {
   // Trouver le joueur le plus voté par les BLEUS
   if (Object.keys(blueVoteCount).length > 0) {
     const maxBlueVotes = Math.max(...Object.values(blueVoteCount));
-    const blueTargets = Object.keys(blueVoteCount).filter(id => blueVoteCount[id] === maxBlueVotes);
+    let blueTargets = Object.keys(blueVoteCount).filter(id => blueVoteCount[id] === maxBlueVotes);
     
-    // En cas d'égalité, choisir aléatoirement
+    // JUGE : Si égalité et qu'un juge existe, c'est son vote qui compte
+    if (blueTargets.length > 1) {
+      const juge = game.players.find(p => p.isAlive && p.team === 'bleu' && p.role === 'juge');
+      if (juge) {
+        // Trouver pour qui le juge a voté
+        const jugeVote = blueTargets.find(targetId => 
+          game.blueVotes[targetId] && game.blueVotes[targetId].includes(juge.socketId)
+        );
+        if (jugeVote) {
+          blueTargets = [jugeVote];
+          console.log(`⚖️ JUGE décide pour l'équipe Bleue: Joueur éliminé`);
+        }
+      }
+    }
+    
+    // En cas d'égalité persistante, choisir aléatoirement
+    const blueTargetId = blueTargets[Math.floor(Math.random() * blueTargets.length)];
+    const blueTarget = game.players.find(p => p.socketId === blueTargetId);
+    
+    if (blueTarget && blueTarget.isAlive) {
+      const percentage = Math.round((maxBlueVotes / blueAlive.length) * 100);
+      const killed = killPlayer(game, blueTarget, `éliminé par vote de l'équipe Bleue (${percentage}%)`);
+      deadPlayers.push(...killed);
+    }
+  }
+  
+  // Trouver le joueur le plus voté par les ROUGES
+  if (Object.keys(redVoteCount).length > 0) {
+    const maxRedVotes = Math.max(...Object.values(redVoteCount));
+    let redTargets = Object.keys(redVoteCount).filter(id => redVoteCount[id] === maxRedVotes);
+    
+    // JUGE : Si égalité et qu'un juge existe, c'est son vote qui compte
+    if (redTargets.length > 1) {
+      const juge = game.players.find(p => p.isAlive && p.team === 'rouge' && p.role === 'juge');
+      if (juge) {
+        // Trouver pour qui le juge a voté
+        const jugeVote = redTargets.find(targetId => 
+          game.redVotes[targetId] && game.redVotes[targetId].includes(juge.socketId)
+        );
+        if (jugeVote) {
+          redTargets = [jugeVote];
+          console.log(`⚖️ JUGE décide pour l'équipe Rouge: Joueur éliminé`);
+        }
+      }
+    }
+    
+    // En cas d'égalité persistante, choisir aléatoirement
     const blueTargetId = blueTargets[Math.floor(Math.random() * blueTargets.length)];
     const blueTarget = game.players.find(p => p.socketId === blueTargetId);
     
@@ -692,6 +815,14 @@ function processVoteResults(gameCode) {
   
   // Notifier tous les joueurs des éliminations
   if (deadPlayers.length > 0) {
+    // Stocker les condamnés pour que le Boulanger puisse les sauver
+    game.condemned = deadPlayers.map(dp => ({
+      socketId: game.players.find(p => p.pseudo === dp.pseudo)?.socketId,
+      pseudo: dp.pseudo,
+      team: dp.team,
+      reason: dp.reason
+    })).filter(c => c.socketId);
+    
     game.players.forEach(player => {
       io.to(player.socketId).emit('vote_results', {
         eliminated: deadPlayers,
@@ -701,6 +832,36 @@ function processVoteResults(gameCode) {
     
     console.log(`💀 Partie ${gameCode} - ${deadPlayers.length} joueur(s) éliminé(s) :`, 
       deadPlayers.map(p => `${p.pseudo} (${p.reason})`).join(', '));
+    
+    // BOULANGER : Notifier les boulangers qu'ils peuvent sauver quelqu'un
+    const boulangers = game.players.filter(p => p.isAlive && p.role === 'boulanger');
+    boulangers.forEach(boulanger => {
+      // Trouver les condamnés de la même équipe
+      const saveableTargets = game.condemned.filter(c => c.team === boulanger.team);
+      
+      if (saveableTargets.length > 0) {
+        io.to(boulanger.socketId).emit('baker_can_save', {
+          targets: saveableTargets,
+          message: `🍞 BOULANGER ! Un membre de votre équipe va être éliminé. Vous avez 30 secondes pour le sauver !`
+        });
+        console.log(`🍞 Boulanger ${boulanger.pseudo} peut sauver: ${saveableTargets.map(t => t.pseudo).join(', ')}`);
+      }
+    });
+    
+    // Après 30 secondes, tuer définitivement ceux qui n'ont pas été sauvés
+    setTimeout(() => {
+      if (game.condemned && game.condemned.length > 0) {
+        game.condemned.forEach(condemned => {
+          const player = game.players.find(p => p.socketId === condemned.socketId);
+          if (player && !player.isRevived) {
+            // Tuer définitivement
+            player.isAlive = false;
+          }
+        });
+        game.condemned = [];
+        updateRoom(gameCode);
+      }
+    }, 30000);
   } else {
     // Aucun vote ou aucune élimination
     game.players.forEach(player => {
@@ -711,12 +872,128 @@ function processVoteResults(gameCode) {
     });
   }
   
+  // ÉLECTION DU REPRÉSENTANT après le 1er vote
+  if (!game.representantElected && game.currentVoteNumber >= 1) {
+    electRepresentants(gameCode);
+  }
+  
+  // Nettoyer les effets temporaires de ce tour
+  cleanupTurnEffects(game);
+  
   updateRoom(gameCode);
 }
 
 // ==========================
 // FONCTIONS UTILITAIRES
 // ==========================
+
+// Nettoie les effets temporaires d'un tour
+function cleanupTurnEffects(game) {
+  // Retirer les protections
+  game.players.forEach(p => {
+    p.protected = false;
+    p.protectedBy = null;
+  });
+  
+  // Retirer le cryptage
+  game.players.forEach(p => {
+    p.crypted = false;
+    p.cryptedBy = null;
+  });
+  
+  // Les joueurs réanimés meurent maintenant
+  game.players.forEach(p => {
+    if (p.isRevived) {
+      p.isAlive = false;
+      p.isRevived = false;
+      p.canRevivedKill = false;
+      p.revivedBy = null;
+      console.log(`💀 ${p.pseudo} meurt après avoir été réanimé (fin du tour de grâce)`);
+    }
+  });
+  
+  // Annuler l'échange de pseudos du hacker si le tour est terminé
+  if (game.pseudoSwap && game.currentTurn >= game.pseudoSwap.turnEnd) {
+    const player1 = game.players.find(p => p.socketId === game.pseudoSwap.target1);
+    const player2 = game.players.find(p => p.socketId === game.pseudoSwap.target2);
+    
+    if (player1 && player2) {
+      // Remettre les pseudos originaux
+      player1.anonymousNumber = game.pseudoSwap.originalNumber1;
+      player2.anonymousNumber = game.pseudoSwap.originalNumber2;
+      
+      console.log(`💻 Échange de pseudos annulé - retour à la normale`);
+    }
+    
+    game.pseudoSwap = null;
+  }
+  
+  // Incrémenter le compteur de tours
+  game.currentTurn++;
+  
+  console.log(`🔄 Tour ${game.currentTurn} - Effets temporaires nettoyés`);
+}
+
+// Élit les représentants après le 1er vote
+function electRepresentants(gameCode) {
+  const game = games[gameCode];
+  if (!game || game.representantElected) return;
+  
+  const blueAlive = game.players.filter(p => p.team === 'bleu' && p.isAlive && !p.isTraitor);
+  const redAlive = game.players.filter(p => p.team === 'rouge' && p.isAlive && !p.isTraitor);
+  
+  let blueRep = null;
+  let redRep = null;
+  
+  // Élire un représentant bleu aléatoire
+  if (blueAlive.length > 0) {
+    blueRep = blueAlive[Math.floor(Math.random() * blueAlive.length)];
+    blueRep.role = 'representant';
+    blueRep.isRepresentant = true;
+    console.log(`👑 Représentant BLEU élu : Joueur ${blueRep.anonymousNumber} (${blueRep.pseudo})`);
+  }
+  
+  // Élire un représentant rouge aléatoire
+  if (redAlive.length > 0) {
+    redRep = redAlive[Math.floor(Math.random() * redAlive.length)];
+    redRep.role = 'representant';
+    redRep.isRepresentant = true;
+    console.log(`👑 Représentant ROUGE élu : Joueur ${redRep.anonymousNumber} (${redRep.pseudo})`);
+  }
+  
+  game.representantElected = true;
+  
+  // Notifier tous les joueurs de l'élection
+  game.players.forEach(player => {
+    const message = {
+      blueRep: blueRep ? blueRep.anonymousNumber : null,
+      redRep: redRep ? redRep.anonymousNumber : null,
+      message: '👑 ÉLECTION : Les représentants ont été élus (par leur numéro de joueur) ! Ils connaissent tous les membres de leur équipe et sont immunisés contre les tueurs.'
+    };
+    
+    // Si le joueur est le représentant, lui envoyer des infos supplémentaires
+    if (player.isRepresentant) {
+      const teamMates = game.players.filter(p => 
+        p.team === player.team && 
+        p.isAlive && 
+        p.socketId !== player.socketId &&
+        !p.isTraitor
+      );
+      
+      message.youAreRep = true;
+      message.teamMates = teamMates.map(p => ({
+        pseudo: p.pseudo,
+        anonymousNumber: p.anonymousNumber,
+        realLifeInfo: p.realLifeInfo,
+        role: p.role
+      }));
+    }
+    
+    io.to(player.socketId).emit('representant_elected', message);
+  });
+  
+  updateRoom(gameCode);
+}
 
 // Génère un code de partie à 4 lettres
 function generateGameCode() {
@@ -1201,26 +1478,20 @@ io.on('connection', (socket) => {
     const bleus = shuffled.slice(0, half);
     const rouges = shuffled.slice(half);
 
-    // ÉTAPE 3 : Attribution des rôles
-    // Bleus
-    bleus[0].role = 'representant';
-    bleus[1].role = 'tueur';
-    bleus[1].munitions = 1; // Le tueur a 1 munition
-    for (let i = 2; i < bleus.length; i++) {
-      bleus[i].role = 'lambda';
-    }
-
-    // Rouges
-    rouges[0].role = 'representant';
-    rouges[1].role = 'tueur';
-    rouges[1].munitions = 1;
-    for (let i = 2; i < rouges.length; i++) {
-      rouges[i].role = 'lambda';
-    }
-
+    // ÉTAPE 3 : Attribution des rôles (SANS REPRÉSENTANT - il sera élu après le 1er vote)
     // Assigne l'équipe
-    bleus.forEach(p => p.team = 'bleu');
-    rouges.forEach(p => p.team = 'rouge');
+    bleus.forEach(p => {
+      p.team = 'bleu';
+      p.role = 'lambda'; // Par défaut
+      p.isAlive = true;
+      p.hasVoted = false;
+    });
+    rouges.forEach(p => {
+      p.team = 'rouge';
+      p.role = 'lambda'; // Par défaut
+      p.isAlive = true;
+      p.hasVoted = false;
+    });
 
     // Met à jour le tableau des joueurs
     game.players = [...bleus, ...rouges];
@@ -1232,19 +1503,22 @@ io.on('connection', (socket) => {
     });
 
     // ÉTAPE 4 : Désigner les TRAÎTRES (si au moins 8 joueurs)
+    let traitors = [];
     if (game.players.length >= 8) {
-      // Choisir un joueur de chaque équipe (sauf les représentants et tueurs)
-      const bleusEligibles = bleus.filter(p => p.role === 'lambda');
-      const rougesEligibles = rouges.filter(p => p.role === 'lambda');
+      // Choisir un joueur lambda de chaque équipe
+      const bleusForTraitors = bleus.filter(p => p.role === 'lambda');
+      const rougesForTraitors = rouges.filter(p => p.role === 'lambda');
       
-      if (bleusEligibles.length > 0 && rougesEligibles.length > 0) {
-        const traitre1 = bleusEligibles[Math.floor(Math.random() * bleusEligibles.length)];
-        const traitre2 = rougesEligibles[Math.floor(Math.random() * rougesEligibles.length)];
+      if (bleusForTraitors.length > 0 && rougesForTraitors.length > 0) {
+        const traitre1 = bleusForTraitors[Math.floor(Math.random() * bleusForTraitors.length)];
+        const traitre2 = rougesForTraitors[Math.floor(Math.random() * rougesForTraitors.length)];
         
         traitre1.isTraitor = true;
         traitre1.traitorPartnerSocketId = traitre2.socketId;
         traitre2.isTraitor = true;
         traitre2.traitorPartnerSocketId = traitre1.socketId;
+        
+        traitors = [traitre1, traitre2];
         
         console.log(`🎭 Traîtres : ${traitre1.pseudo} (infiltré ${traitre1.team}) & ${traitre2.pseudo} (infiltré ${traitre2.team})`);
       }
@@ -1252,9 +1526,9 @@ io.on('connection', (socket) => {
 
     // ÉTAPE 5 : Désigner les AMOUREUX (si au moins 6 joueurs et pas de traîtres en conflit)
     if (game.players.length >= 6) {
-      // Choisir un joueur de chaque équipe (sauf les représentants et les traîtres)
-      const bleusEligibles = bleus.filter(p => p.role !== 'representant' && !p.isTraitor);
-      const rougesEligibles = rouges.filter(p => p.role !== 'representant' && !p.isTraitor);
+      // Choisir un joueur de chaque équipe (sauf les traîtres)
+      const bleusEligibles = bleus.filter(p => !p.isTraitor);
+      const rougesEligibles = rouges.filter(p => !p.isTraitor);
       
       if (bleusEligibles.length > 0 && rougesEligibles.length > 0) {
         const amoureux1 = bleusEligibles[Math.floor(Math.random() * bleusEligibles.length)];
@@ -1262,16 +1536,43 @@ io.on('connection', (socket) => {
         
         amoureux1.isLover = true;
         amoureux1.loverSocketId = amoureux2.socketId;
+        amoureux1.loverRealName = amoureux2.pseudo; // Ils se connaissent par leur NOM RÉEL
         amoureux2.isLover = true;
         amoureux2.loverSocketId = amoureux1.socketId;
+        amoureux2.loverRealName = amoureux1.pseudo; // Ils se connaissent par leur NOM RÉEL
         
         console.log(`💕 Amoureux : ${amoureux1.pseudo} (${amoureux1.team}) ❤️ ${amoureux2.pseudo} (${amoureux2.team})`);
+        console.log(`   Ils se connaissent par leur NOM RÉEL (pas leur pseudo)`);
       }
     }
+    
+    // ÉTAPE 6 : Attribution des RÔLES avec le nouveau système
+    assignRoles(game.players, traitors);
+    
+    // Attribuer les propriétés spécifiques des rôles
+    game.players.forEach(player => {
+      const roleInfo = getRoleInfo(player.role);
+      if (roleInfo.powers.kill) {
+        player.munitions = roleInfo.powers.killsPerDay || 1;
+        player.lastKillTurn = -1; // Pour suivre le cooldown
+      }
+      if (roleInfo.powers.usesPerGame !== undefined) {
+        player.powerUses = roleInfo.powers.usesPerGame;
+      }
+      // Initialiser d'autres propriétés selon les pouvoirs
+      player.protected = false;
+      player.crypted = false;
+    });
+    
+    console.log(`🎮 Rôles attribués :`, game.players.map(p => 
+      `${p.pseudo} (${p.team}) - ${getRoleInfo(p.role).name} ${p.isTraitor ? '🎭' : ''}`).join(', '));
     game.status = 'PLAYING';
     game.nextEventTime = game.phases.endTime;
+    game.representantElected = false; // Sera true après le 1er vote
+    game.currentTurn = 0; // Compteur de tours
 
     console.log(`🚀 La partie ${gameCode} a commencé ! Fin prévue : ${new Date(game.phases.endTime).toLocaleString('fr-FR')}`);
+    console.log(`⚠️ IMPORTANT : Les représentants seront élus après le premier vote !`);
 
     // Mettre à jour la partie dans la base de données
     if (game.userId && mongoConnected) {
@@ -1295,12 +1596,19 @@ io.on('connection', (socket) => {
 
     console.log(`🚀 La partie ${gameCode} a commencé !`);
 
-    // ÉTAPE 6 : Envoie du rôle SECRET à chaque joueur
+    // ÉTAPE 7 : Envoie du rôle SECRET à chaque joueur
     game.players.forEach(player => {
+      const roleInfo = getRoleInfo(player.role);
       const roleData = {
         team: player.team,
         role: player.role,
-        munitions: player.munitions,
+        roleInfo: {
+          name: roleInfo.name,
+          emoji: roleInfo.emoji,
+          description: roleInfo.description,
+          powers: roleInfo.powers
+        },
+        munitions: player.munitions || 0,
         isLover: player.isLover || false,
         isTraitor: player.isTraitor || false,
         anonymousNumber: player.anonymousNumber
@@ -1319,15 +1627,16 @@ io.on('connection', (socket) => {
         }
       }
       
-      // Si le joueur est amoureux, envoyer l'info de son partenaire
+      // Si le joueur est amoureux, envoyer l'info de son partenaire (PAR NOM RÉEL)
       if (player.isLover) {
         const lover = game.players.find(p => p.socketId === player.loverSocketId);
         if (lover) {
           roleData.loverInfo = {
-            pseudo: lover.pseudo,
+            realName: lover.pseudo, // NOM RÉEL (pas le pseudo de jeu)
             team: lover.team,
             role: lover.role
           };
+          roleData.loverRealName = lover.pseudo; // Pour affichage direct
         }
       }
       
@@ -1508,6 +1817,22 @@ io.on('connection', (socket) => {
       }
       game.blueVotes[targetSocketId].push(voter.socketId);
       
+      // INFLUENCEUR : Vote compte TRIPLE
+      if (voter.role === 'influenceur' && !voter.influenceurUsed) {
+        game.blueVotes[targetSocketId].push(voter.socketId); // Vote 2
+        game.blueVotes[targetSocketId].push(voter.socketId); // Vote 3
+        voter.influenceurUsed = true;
+        
+        // Révéler l'équipe de l'influenceur à tous
+        game.players.forEach(player => {
+          io.to(player.socketId).emit('action_confirmed', {
+            message: `📢 RÉVÉLATION ! Le Joueur ${voter.anonymousNumber} est un INFLUENCEUR de l'équipe BLEUE ! Son vote compte TRIPLE !`
+          });
+        });
+        
+        console.log(`📢 INFLUENCEUR ${voter.pseudo} (équipe bleue) utilise son pouvoir - vote x3`);
+      }
+      
     } else if (voter.team === 'rouge') {
       // Retirer le vote précédent de ce joueur
       for (const targetId in game.redVotes) {
@@ -1522,6 +1847,22 @@ io.on('connection', (socket) => {
         game.redVotes[targetSocketId] = [];
       }
       game.redVotes[targetSocketId].push(voter.socketId);
+      
+      // INFLUENCEUR : Vote compte TRIPLE
+      if (voter.role === 'influenceur' && !voter.influenceurUsed) {
+        game.redVotes[targetSocketId].push(voter.socketId); // Vote 2
+        game.redVotes[targetSocketId].push(voter.socketId); // Vote 3
+        voter.influenceurUsed = true;
+        
+        // Révéler l'équipe de l'influenceur à tous
+        game.players.forEach(player => {
+          io.to(player.socketId).emit('action_confirmed', {
+            message: `📢 RÉVÉLATION ! Le Joueur ${voter.anonymousNumber} est un INFLUENCEUR de l'équipe ROUGE ! Son vote compte TRIPLE !`
+          });
+        });
+        
+        console.log(`📢 INFLUENCEUR ${voter.pseudo} (équipe rouge) utilise son pouvoir - vote x3`);
+      }
     }
 
     // Marquer le joueur comme ayant voté
@@ -1534,6 +1875,710 @@ io.on('connection', (socket) => {
     });
 
     console.log(`🗳️ Partie ${gameCode} - Joueur ${voter.anonymousNumber} (${voter.team}) vote pour éliminer Joueur ${target.anonymousNumber}`);
+    
+    updateRoom(gameCode);
+  });
+
+  // ==========================
+  // EVENT: UTILISER LE POUVOIR DU TUEUR
+  // ==========================
+  socket.on('use_killer_power', (data) => {
+    const { gameCode, targetSocketId } = data;
+    
+    // Validation
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) {
+      socket.emit('error', { message: codeValidation.error });
+      return;
+    }
+    
+    const targetValidation = validatePlayerId(targetSocketId);
+    if (!targetValidation.valid) {
+      socket.emit('error', { message: 'Cible invalide.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    // Trouver le tueur
+    const killer = game.players.find(p => p.socketId === socket.id);
+    if (!killer || !killer.isAlive) {
+      socket.emit('error', { message: 'Vous ne pouvez pas utiliser ce pouvoir.' });
+      return;
+    }
+    
+    // Vérifier que c'est bien un tueur ou un killeurs
+    const roleInfo = getRoleInfo(killer.role);
+    if (!roleInfo.powers.kill) {
+      socket.emit('error', { message: 'Vous n\'avez pas le pouvoir de tuer.' });
+      return;
+    }
+    
+    // Vérifier les munitions
+    if (killer.munitions <= 0) {
+      socket.emit('error', { message: 'Vous n\'avez plus de munitions.' });
+      return;
+    }
+    
+    // Vérifier le cooldown pour les killeurs
+    if (killer.role === 'killeurs' && roleInfo.powers.killsEvery) {
+      const turnsSinceLastKill = game.currentTurn - (killer.lastKillTurn || -999);
+      if (turnsSinceLastKill < roleInfo.powers.killsEvery) {
+        socket.emit('error', { 
+          message: `Vous devez attendre ${roleInfo.powers.killsEvery - turnsSinceLastKill} tour(s) de plus.` 
+        });
+        return;
+      }
+    }
+    
+    // Trouver la cible
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cette cible n\'est pas disponible.' });
+      return;
+    }
+    
+    // Vérifier si la cible est un représentant (immunisé contre les tueurs)
+    if (target.role === 'representant' || target.isRepresentant) {
+      socket.emit('error', { message: 'Le représentant est immunisé contre les tueurs !' });
+      return;
+    }
+    
+    // Vérifier si la cible est protégée
+    if (target.protected) {
+      // Révéler le tueur (gardien de la paix)
+      game.players.forEach(p => {
+        io.to(p.socketId).emit('killer_revealed', {
+          killerNumber: killer.anonymousNumber,
+          killerPseudo: killer.pseudo,
+          targetNumber: target.anonymousNumber,
+          message: `🛡️ PROTECTION ! Joueur ${target.anonymousNumber} était protégé. Le tueur Joueur ${killer.anonymousNumber} est révélé !`
+        });
+      });
+      console.log(`🛡️ Partie ${gameCode} - Tueur ${killer.anonymousNumber} révélé en attaquant ${target.anonymousNumber}`);
+      return;
+    }
+    
+    // RÈGLE CRITIQUE : Si tueur tue quelqu'un de sa propre équipe, il meurt aussi !
+    let killerDiesAlso = false;
+    if (roleInfo.powers.dieIfKillsTeammate && killer.team === target.team && !killer.isTraitor) {
+      killerDiesAlso = true;
+    }
+    
+    // Consommer la munition
+    killer.munitions--;
+    killer.lastKillTurn = game.currentTurn;
+    
+    // Éliminer la cible
+    const deadPlayers = killPlayer(game, target, `tué par un Tueur`);
+    
+    // Si le tueur doit mourir aussi
+    if (killerDiesAlso) {
+      const killerDeaths = killPlayer(game, killer, `mort pour avoir tué un membre de sa propre équipe`);
+      deadPlayers.push(...killerDeaths);
+      
+      console.log(`💀 Partie ${gameCode} - LE TUEUR ${killer.pseudo} MEURT pour avoir tué ${target.pseudo} de sa propre équipe !`);
+    }
+    
+    // Notifier tous les joueurs
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('killer_action', {
+        eliminated: deadPlayers,
+        message: killerDiesAlso 
+          ? `💀 Un tueur a tué quelqu'un de sa propre équipe et en est mort !`
+          : `💀 Un tueur a frappé !`
+      });
+    });
+    
+    console.log(`🔪 Partie ${gameCode} - Tueur ${killer.anonymousNumber} a tué ${target.anonymousNumber}${killerDiesAlso ? ' ET EN EST MORT !' : ''}`);
+    
+    // Vérifier les conditions de victoire
+    const victory = checkVictoryConditions(game);
+    if (victory) {
+      endGameWithWinner(gameCode, victory);
+    } else {
+      updateRoom(gameCode);
+    }
+  });
+
+  // ==========================
+  // EVENT: GARDIEN DE LA PAIX - Protéger un joueur
+  // ==========================
+  socket.on('protect_player', (data) => {
+    const { gameCode, targetSocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const gardien = game.players.find(p => p.socketId === socket.id);
+    if (!gardien || !gardien.isAlive || gardien.role !== 'gardien_paix') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le gardien de la paix.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cette cible n\'est pas disponible.' });
+      return;
+    }
+    
+    // Retirer la protection précédente
+    game.players.forEach(p => p.protected = false);
+    
+    // Protéger la nouvelle cible
+    target.protected = true;
+    target.protectedBy = gardien.socketId;
+    
+    socket.emit('action_confirmed', {
+      message: `🛡️ Vous protégez le Joueur #${target.anonymousNumber} ce tour`
+    });
+    
+    console.log(`🛡️ Partie ${gameCode} - Gardien ${gardien.anonymousNumber} protège Joueur #${target.anonymousNumber}`);
+  });
+
+  // ==========================
+  // EVENT: CYBERPOMPIER - Crypter un joueur
+  // ==========================
+  socket.on('crypt_player', (data) => {
+    const { gameCode, targetSocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const pompier = game.players.find(p => p.socketId === socket.id);
+    if (!pompier || !pompier.isAlive || pompier.role !== 'cyberpompier') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le cyberpompier.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cette cible n\'est pas disponible.' });
+      return;
+    }
+    
+    // Retirer le cryptage précédent
+    game.players.forEach(p => p.crypted = false);
+    
+    // Crypter la nouvelle cible
+    target.crypted = true;
+    target.cryptedBy = pompier.socketId;
+    
+    socket.emit('action_confirmed', {
+      message: `👨‍🚒 Vous cryptez le Joueur #${target.anonymousNumber}. Les votes contre lui ne compteront pas ce tour.`
+    });
+    
+    console.log(`👨‍🚒 Partie ${gameCode} - Cyberpompier ${pompier.anonymousNumber} crypte Joueur #${target.anonymousNumber}`);
+  });
+
+  // ==========================
+  // EVENT: JOURNALISTE - Poser une question
+  // ==========================
+  socket.on('ask_question', (data) => {
+    const { gameCode, targetSocketId, questionType } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const journaliste = game.players.find(p => p.socketId === socket.id);
+    if (!journaliste || !journaliste.isAlive || journaliste.role !== 'journaliste') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le journaliste.' });
+      return;
+    }
+    
+    // Vérifier le cooldown (1 question par tour)
+    if (journaliste.lastQuestionTurn === game.currentTurn) {
+      socket.emit('error', { message: 'Vous avez déjà posé une question ce tour.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cette cible n\'est pas disponible.' });
+      return;
+    }
+    
+    // Préparer la réponse
+    let answer = '';
+    let truthful = Math.random() > 0.33; // 2/3 de chance d'être vrai
+    
+    if (questionType === 'isTraitor') {
+      answer = truthful ? (target.isTraitor ? 'OUI' : 'NON') : (target.isTraitor ? 'NON' : 'OUI');
+    } else if (questionType === 'team') {
+      answer = truthful ? target.team : (target.team === 'bleu' ? 'rouge' : 'bleu');
+    } else if (questionType === 'role') {
+      const roleInfo = getRoleInfo(target.role);
+      answer = truthful ? roleInfo.name : getRoleInfo('lambda').name;
+    }
+    
+    journaliste.lastQuestionTurn = game.currentTurn;
+    
+    // Envoyer la réponse à TOUS les joueurs (publique)
+    const message = {
+      question: `Le Joueur #${target.anonymousNumber} ${questionType === 'isTraitor' ? 'est-il un traître ?' : questionType === 'team' ? 'de quelle équipe ?' : 'quel est son rôle ?'}`,
+      answer: answer,
+      warning: '⚠️ Cette réponse a 1 chance sur 3 d\'être fausse !',
+      askedBy: journaliste.anonymousNumber
+    };
+    
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('journalist_answer', message);
+    });
+    
+    console.log(`📰 Partie ${gameCode} - Journaliste ${journaliste.anonymousNumber} demande: Joueur #${target.anonymousNumber} ${questionType} → ${answer} (${truthful ? 'vrai' : 'faux'})`);
+  });
+
+  // ==========================
+  // EVENT: STALKER - Enquêter sur un nom réel
+  // ==========================
+  socket.on('investigate_name', (data) => {
+    const { gameCode, realName } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    if (!codeValidation.valid) {
+      socket.emit('error', { message: 'Code de partie invalide.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const stalker = game.players.find(p => p.socketId === socket.id);
+    if (!stalker || !stalker.isAlive || stalker.role !== 'stalker') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le stalker.' });
+      return;
+    }
+    
+    // Vérifier le cooldown
+    if (stalker.lastInvestigationTurn === game.currentTurn) {
+      socket.emit('error', { message: 'Vous avez déjà enquêté ce tour.' });
+      return;
+    }
+    
+    // Chercher le joueur par nom réel
+    const target = game.players.find(p => 
+      p.pseudo.toLowerCase() === realName.toLowerCase() && 
+      p.isAlive &&
+      p.socketId !== stalker.socketId
+    );
+    
+    if (!target) {
+      socket.emit('error', { message: 'Aucun joueur trouvé avec ce nom.' });
+      return;
+    }
+    
+    stalker.lastInvestigationTurn = game.currentTurn;
+    
+    // Donner un indice sur le pseudo
+    const number = target.anonymousNumber;
+    let hint = '';
+    
+    const hints = [
+      `Le pseudo est ${number % 2 === 0 ? 'un nombre PAIR' : 'un nombre IMPAIR'}`,
+      `Le pseudo commence par "${String(number).charAt(0)}"`,
+      `Le pseudo contient ${String(number).length} chiffre(s)`,
+      number < 50 ? 'Le pseudo est INFÉRIEUR à 50' : 'Le pseudo est SUPÉRIEUR ou égal à 50'
+    ];
+    
+    hint = hints[Math.floor(Math.random() * hints.length)];
+    
+    socket.emit('investigation_result', {
+      realName: realName,
+      hint: hint,
+      message: `🎯 ENQUÊTE sur ${realName}: ${hint}`
+    });
+    
+    console.log(`🎯 Partie ${gameCode} - Stalker ${stalker.anonymousNumber} enquête sur ${realName} (Joueur #${number}) → ${hint}`);
+  });
+
+  // ==========================
+  // EVENT: HACKER - Échanger deux pseudos
+  // ==========================
+  socket.on('swap_pseudos', (data) => {
+    const { gameCode, target1SocketId, target2SocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const target1Validation = validatePlayerId(target1SocketId);
+    const target2Validation = validatePlayerId(target2SocketId);
+    
+    if (!codeValidation.valid || !target1Validation.valid || !target2Validation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const hacker = game.players.find(p => p.socketId === socket.id);
+    if (!hacker || !hacker.isAlive || hacker.role !== 'hacker') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le hacker.' });
+      return;
+    }
+    
+    // Vérifier les utilisations restantes
+    if (!hacker.powerUses || hacker.powerUses <= 0) {
+      socket.emit('error', { message: 'Vous avez déjà utilisé votre pouvoir.' });
+      return;
+    }
+    
+    const target1 = game.players.find(p => p.socketId === target1Validation.value);
+    const target2 = game.players.find(p => p.socketId === target2Validation.value);
+    
+    if (!target1 || !target1.isAlive || !target2 || !target2.isAlive) {
+      socket.emit('error', { message: 'Les cibles doivent être vivantes.' });
+      return;
+    }
+    
+    if (target1.socketId === target2.socketId) {
+      socket.emit('error', { message: 'Vous devez choisir deux joueurs différents.' });
+      return;
+    }
+    
+    // Échanger les pseudos
+    const temp = target1.anonymousNumber;
+    target1.anonymousNumber = target2.anonymousNumber;
+    target2.anonymousNumber = temp;
+    
+    // Sauvegarder pour annuler après 1 tour
+    game.pseudoSwap = {
+      target1: target1.socketId,
+      target2: target2.socketId,
+      originalNumber1: target2.anonymousNumber, // Inversé car déjà échangé
+      originalNumber2: temp,
+      turnEnd: game.currentTurn + 1
+    };
+    
+    hacker.powerUses--;
+    
+    // Notifier tous les joueurs
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('pseudos_swapped', {
+        message: `💻 HACK ! Deux pseudos ont été échangés pour ce tour !`
+      });
+    });
+    
+    socket.emit('action_confirmed', {
+      message: `💻 Vous avez échangé les pseudos des Joueurs #${target1.anonymousNumber} et #${target2.anonymousNumber} pour ce tour !`
+    });
+    
+    console.log(`💻 Partie ${gameCode} - Hacker échange pseudos: ${temp} ↔️ ${target2.anonymousNumber}`);
+    
+    updateRoom(gameCode);
+  });
+
+  // ==========================
+  // EVENT: GURU - Deviner et convertir
+  // ==========================
+  socket.on('convert_player', (data) => {
+    const { gameCode, targetSocketId, guessedName } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const guru = game.players.find(p => p.socketId === socket.id);
+    if (!guru || !guru.isAlive || guru.role !== 'guru' || !guru.isTraitor) {
+      socket.emit('error', { message: 'Vous n\'êtes pas le guru.' });
+      return;
+    }
+    
+    // Vérifier les utilisations restantes
+    if (!guru.powerUses || guru.powerUses <= 0) {
+      socket.emit('error', { message: 'Vous n\'avez plus de tentatives.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cette cible n\'est pas disponible.' });
+      return;
+    }
+    
+    // Vérifier que c'est un ennemi
+    if (target.team === guru.team && !guru.isTraitor) {
+      socket.emit('error', { message: 'Vous ne pouvez convertir que des ennemis.' });
+      return;
+    }
+    
+    guru.powerUses--;
+    
+    // Vérifier si le nom deviné est correct
+    const isCorrect = target.pseudo.toLowerCase() === guessedName.toLowerCase();
+    
+    if (isCorrect) {
+      // CONVERSION RÉUSSIE !
+      target.isTraitor = true;
+      target.convertedBy = guru.socketId;
+      
+      // Notifier le guru
+      socket.emit('conversion_success', {
+        targetNumber: target.anonymousNumber,
+        targetName: target.pseudo,
+        message: `🧙 SUCCÈS ! Vous avez converti ${target.pseudo} (Joueur #${target.anonymousNumber}) en Traître !`
+      });
+      
+      // Notifier la cible qu'elle est maintenant traître
+      io.to(target.socketId).emit('you_are_converted', {
+        message: `🧙 Vous avez été CONVERTI ! Vous êtes maintenant un TRAÎTRE !`,
+        newTeam: 'traîtres'
+      });
+      
+      console.log(`🧙 Partie ${gameCode} - Guru ${guru.anonymousNumber} a converti ${target.pseudo}!`);
+    } else {
+      socket.emit('conversion_failed', {
+        message: `❌ Échec. Ce n'était pas le bon nom pour le Joueur #${target.anonymousNumber}.`,
+        remainingAttempts: guru.powerUses
+      });
+      
+      console.log(`🧙 Partie ${gameCode} - Guru ${guru.anonymousNumber} a échoué à convertir Joueur #${target.anonymousNumber}`);
+    }
+  });
+
+  // ==========================
+  // EVENT: USURPATEUR - Voler un pseudo de mort
+  // ==========================
+  socket.on('steal_pseudo', (data) => {
+    const { gameCode, deadPlayerSocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const deadValidation = validatePlayerId(deadPlayerSocketId);
+    
+    if (!codeValidation.valid || !deadValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const usurpateur = game.players.find(p => p.socketId === socket.id);
+    if (!usurpateur || !usurpateur.isAlive || usurpateur.role !== 'usurpateur') {
+      socket.emit('error', { message: 'Vous n\'êtes pas l\'usurpateur.' });
+      return;
+    }
+    
+    // Vérifier les utilisations restantes
+    if (!usurpateur.powerUses || usurpateur.powerUses <= 0) {
+      socket.emit('error', { message: 'Vous avez déjà utilisé votre pouvoir.' });
+      return;
+    }
+    
+    const deadPlayer = game.players.find(p => p.socketId === deadValidation.value);
+    if (!deadPlayer || deadPlayer.isAlive) {
+      socket.emit('error', { message: 'Ce joueur doit être mort.' });
+      return;
+    }
+    
+    // Voler le pseudo
+    const oldNumber = usurpateur.anonymousNumber;
+    usurpateur.anonymousNumber = deadPlayer.anonymousNumber;
+    usurpateur.powerUses--;
+    
+    // Notifier tous les joueurs
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('pseudo_stolen', {
+        message: `🎭 Un joueur a pris l'identité d'un mort !`
+      });
+    });
+    
+    socket.emit('action_confirmed', {
+      message: `🎭 Vous êtes maintenant le Joueur #${usurpateur.anonymousNumber} (ancien #${oldNumber})`
+    });
+    
+    console.log(`🎭 Partie ${gameCode} - Usurpateur prend le pseudo du Joueur #${deadPlayer.anonymousNumber}`);
+    
+    updateRoom(gameCode);
+  });
+
+  // ==========================
+  // EVENT: BOULANGER - Sauver un joueur condamné
+  // ==========================
+  socket.on('save_player', (data) => {
+    const { gameCode, targetSocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const boulanger = game.players.find(p => p.socketId === socket.id);
+    if (!boulanger || !boulanger.isAlive || boulanger.role !== 'boulanger') {
+      socket.emit('error', { message: 'Vous n\'êtes pas le boulanger.' });
+      return;
+    }
+    
+    // Vérifier qu'il y a des condamnés
+    if (!game.condemned || game.condemned.length === 0) {
+      socket.emit('error', { message: 'Aucun joueur à sauver actuellement.' });
+      return;
+    }
+    
+    // Trouver le condamné
+    const condemned = game.condemned.find(c => c.socketId === targetValidation.value);
+    if (!condemned) {
+      socket.emit('error', { message: 'Ce joueur ne peut pas être sauvé.' });
+      return;
+    }
+    
+    // Vérifier que c'est de la même équipe
+    if (condemned.team !== boulanger.team) {
+      socket.emit('error', { message: 'Vous ne pouvez sauver que votre équipe.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target) {
+      socket.emit('error', { message: 'Joueur introuvable.' });
+      return;
+    }
+    
+    // SAUVER le joueur
+    target.isRevived = true;
+    target.revivedBy = boulanger.socketId;
+    target.canRevivedKill = true; // Peut tuer une fois
+    
+    // Retirer des condamnés
+    game.condemned = game.condemned.filter(c => c.socketId !== targetValidation.value);
+    
+    // Notifier tous les joueurs
+    game.players.forEach(p => {
+      io.to(p.socketId).emit('action_confirmed', {
+        message: `🍞 UN BOULANGER A SAUVÉ LE JOUEUR #${target.anonymousNumber} ! Il reste en vie pour ce tour et peut SE VENGER !`
+      });
+    });
+    
+    socket.emit('action_confirmed', {
+      message: `🍞 Vous avez sauvé le Joueur #${target.anonymousNumber} ! Vous êtes immunisé contre lui.`
+    });
+    
+    io.to(target.socketId).emit('you_are_revived', {
+      message: `🍞 VOUS AVEZ ÉTÉ SAUVÉ PAR UN BOULANGER ! Vous pouvez TUER UN JOUEUR en représailles !`,
+      canKill: true
+    });
+    
+    console.log(`🍞 Partie ${gameCode} - Boulanger ${boulanger.pseudo} sauve ${target.pseudo}`);
+    
+    updateRoom(gameCode);
+  });
+
+  // ==========================
+  // EVENT: JOUEUR RÉANIMÉ - Tuer en représailles
+  // ==========================
+  socket.on('revived_kill', (data) => {
+    const { gameCode, targetSocketId } = data;
+    
+    const codeValidation = validateGameCode(gameCode);
+    const targetValidation = validatePlayerId(targetSocketId);
+    
+    if (!codeValidation.valid || !targetValidation.valid) {
+      socket.emit('error', { message: 'Données invalides.' });
+      return;
+    }
+    
+    const game = games[codeValidation.value];
+    if (!game || game.status !== 'PLAYING') {
+      socket.emit('error', { message: 'La partie n\'est pas en cours.' });
+      return;
+    }
+    
+    const revived = game.players.find(p => p.socketId === socket.id);
+    if (!revived || !revived.isRevived || !revived.canRevivedKill) {
+      socket.emit('error', { message: 'Vous ne pouvez pas tuer actuellement.' });
+      return;
+    }
+    
+    const target = game.players.find(p => p.socketId === targetValidation.value);
+    if (!target || !target.isAlive) {
+      socket.emit('error', { message: 'Cible invalide.' });
+      return;
+    }
+    
+    // Ne peut pas tuer le boulanger qui l'a sauvé
+    if (target.socketId === revived.revivedBy) {
+      socket.emit('error', { message: '🍞 Vous ne pouvez pas tuer le boulanger qui vous a sauvé !' });
+      return;
+    }
+    
+    // TUER la cible
+    const deadPlayers = killPlayer(game, target, `tué par le Joueur #${revived.anonymousNumber} (réanimé)`);
+    
+    // Retirer le pouvoir de tuer
+    revived.canRevivedKill = false;
+    
+    // Notifier tous les joueurs
+    game.players.forEach(player => {
+      io.to(player.socketId).emit('killer_action', {
+        eliminated: deadPlayers,
+        message: `☠️ Le Joueur #${revived.anonymousNumber} (RÉANIMÉ) a tué le Joueur #${target.anonymousNumber} !`
+      });
+    });
+    
+    console.log(`☠️ Partie ${gameCode} - Joueur réanimé ${revived.pseudo} tue ${target.pseudo}`);
     
     updateRoom(gameCode);
   });

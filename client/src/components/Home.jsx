@@ -6,6 +6,10 @@ import Register from './Register';
 import AccountMenu from './AccountMenu';
 
 function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
+    // Synchronisation utilisateur après modification du profil
+    const handleUserUpdate = (updatedUser) => {
+      setUser(updatedUser);
+    };
   const [mode, setMode] = useState(''); // 'create', 'join', 'login', ou 'register'
   const [pseudo, setPseudo] = useState('');
   const [realLifeInfo, setRealLifeInfo] = useState('');
@@ -89,6 +93,7 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
             onClose={() => setShowAccountMenu(false)}
             onLogout={handleLogout}
             csrfToken={csrfToken}
+            onUserUpdate={handleUserUpdate}
             onRejoinGame={(gameCode) => {
               setCode(gameCode);
               setShowAccountMenu(false);
@@ -143,7 +148,7 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
         </div>
         
         <div className="description">
-          <p><strong>🎯 OBJECTIF :</strong> Découvrez qui sont les traîtres infiltrés dans votre équipe avant qu'il ne soit trop tard !</p>
+          <p><strong>🎯 OBJECTIF :</strong> Affrontez-vous en équipes avec des rôles secrets, éliminez les autres… et qu'il ne reste qu'un seul camp gagnant</p>
           <p><strong>👥 JOUEURS :</strong> 4 minimum (8+ pour les traîtres)</p>
           <p><strong>⏱️ DURÉE :</strong> De 20 minutes à 10 jours</p>
         </div>
