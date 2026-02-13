@@ -928,6 +928,15 @@ function cleanupTurnEffects(game) {
     game.pseudoSwap = null;
   }
   
+  // Recharger les munitions des tueurs (1 balle par tour)
+  game.players.forEach(p => {
+    if (p.isAlive && p.role === 'tueur') {
+      const roleInfo = getRoleInfo(p.role);
+      p.munitions = roleInfo.powers.killsPerDay || 1;
+      console.log(`🔫 Tueur ${p.anonymousNumber} - munition rechargée (${p.munitions})`);
+    }
+  });
+  
   // Incrémenter le compteur de tours
   game.currentTurn++;
   
