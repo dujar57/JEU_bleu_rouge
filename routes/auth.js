@@ -198,6 +198,15 @@ router.post('/login', authLimiter, [
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
     
+    // Vérifier si l'email est confirmé
+    if (!user.emailVerified) {
+      return res.status(403).json({ 
+        error: 'Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.',
+        emailVerificationRequired: true,
+        email: user.email
+      });
+    }
+    
     // Créer le token
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {

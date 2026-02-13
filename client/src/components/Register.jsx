@@ -34,7 +34,7 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
       const data = await response.json();
 
       if (response.ok) {
-        alert('✅ Inscription réussie ! Vous pouvez maintenant vous connecter.');
+        alert('✅ Inscription réussie !\n\n📧 Un email de confirmation a été envoyé à ' + email + '\n\nVeuillez vérifier votre boîte de réception et cliquer sur le lien de validation avant de vous connecter.');
         if (onRegisterSuccess) onRegisterSuccess(data);
         onBack();
       } else {
