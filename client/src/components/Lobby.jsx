@@ -1,14 +1,16 @@
 // -*- coding: utf-8 -*-
 // @charset "UTF-8"
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function Lobby({ gameCode, gameData, pseudo, startGame }) {
+  const { t } = useTranslation();
   const [selectedDuration, setSelectedDuration] = useState(3600000); // Par défaut 1h
 
   if (!gameData) {
     return (
       <div className="container">
-        <div className="loading">Chargement...</div>
+        <div className="loading">{t('lobby.loading')}</div>
       </div>
     );
   }
@@ -16,14 +18,14 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
   const isHost = gameData.players[0]?.pseudo === pseudo;
 
   const durations = [
-    { label: '⚡ 20 minutes', value: 20 * 60 * 1000 },
-    { label: '⏱️ 1 heure', value: 60 * 60 * 1000 },
-    { label: '🕐 6 heures', value: 6 * 60 * 60 * 1000 },
-    { label: '📅 1 jour', value: 24 * 60 * 60 * 1000 },
-    { label: '📅 2 jours', value: 2 * 24 * 60 * 60 * 1000 },
-    { label: '📅 4 jours', value: 4 * 24 * 60 * 60 * 1000 },
-    { label: '📅 5 jours', value: 5 * 24 * 60 * 60 * 1000 },
-    { label: '📅 10 jours', value: 10 * 24 * 60 * 60 * 1000 }
+    { label: `⚡ ${t('lobby.duration.20min')}`, value: 20 * 60 * 1000 },
+    { label: `⏱️ ${t('lobby.duration.1h')}`, value: 60 * 60 * 1000 },
+    { label: `🕐 ${t('lobby.duration.6h')}`, value: 6 * 60 * 60 * 1000 },
+    { label: `📅 ${t('lobby.duration.1day')}`, value: 24 * 60 * 60 * 1000 },
+    { label: `📅 ${t('lobby.duration.2days')}`, value: 2 * 24 * 60 * 60 * 1000 },
+    { label: `📅 ${t('lobby.duration.4days')}`, value: 4 * 24 * 60 * 60 * 1000 },
+    { label: `📅 ${t('lobby.duration.5days')}`, value: 5 * 24 * 60 * 60 * 1000 },
+    { label: `📅 ${t('lobby.duration.10days')}`, value: 10 * 24 * 60 * 60 * 1000 }
   ];
 
   const handleStartGame = () => {
@@ -32,27 +34,27 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
 
   return (
     <div className="container">
-      <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" /></div>
+      <div className="logo-circle"><img src="/logo-bvr.png" alt="Logo Blue vs Red" className="logo-img" /></div>
       <div className="logo">
         <h1>
-          <span className="blue">BLEU</span>
-          <span className="vs">VS</span>
-          <span className="red">ROUGE</span>
+          <span className="blue">{t('game.title.blue')}</span>
+          <span className="vs">{t('game.title.vs')}</span>
+          <span className="red">{t('game.title.red')}</span>
         </h1>
       </div>
       
       <div className="game-code">
-        <h3>Code de la partie</h3>
+        <h3>{t('lobby.gameCode')}</h3>
         <div className="code">{gameCode}</div>
       </div>
 
-      <h2>Joueurs ({gameData.players.length})</h2>
+      <h2>{t('lobby.players')} ({gameData.players.length})</h2>
       <div className="players-list">
         {gameData.players.map((player, index) => (
           <div key={index} className="player-item">
             <div>
               <div className="player-name">
-                {player.pseudo} {player.pseudo === pseudo && '(Vous)'}
+                {player.pseudo} {player.pseudo === pseudo && `${t('lobby.you')}`}
               </div>
               <div className="player-info">{player.realLifeInfo}</div>
             </div>
@@ -75,9 +77,9 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
               marginBottom: '18px', 
               textAlign: 'center',
               color: '#2c1810',
-              fontFamily: 'Arial, Helvetica, sans-serif',
+              fontFamily: "'Special Elite', cursive",
               letterSpacing: '2px'
-            }}>⏰ DURÉE DE LA PARTIE</h3>
+            }}>⏰ {t('lobby.duration')}</h3>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -113,7 +115,7 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
               ))}
             </div>
           </div>
-          <button onClick={handleStartGame} style={{ marginTop: '25px' }}>Lancer la partie</button>
+          <button onClick={handleStartGame} style={{ marginTop: '25px' }}>{t('lobby.startGame')}</button>
         </>
       )}
 
@@ -129,13 +131,13 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
           borderRadius: '15px',
           border: '3px dashed #E74C3C'
         }}>
-          En attente de joueurs (minimum 4)
+          {t('lobby.waitingPlayers')}
         </div>
       )}
 
       {!isHost && (
         <div style={{ textAlign: 'center', color: '#999', marginTop: '20px' }}>
-          En attente que l'hôte lance la partie...
+          {t('lobby.waitingHost')}
         </div>
       )}
 
@@ -148,11 +150,10 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
           border: '1px solid rgba(139, 0, 255, 0.3)'
         }}>
           <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
-            🎭 Mode Traîtres Activé !
+            🎭 {t('lobby.traitorsInfo')}
           </div>
           <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.5' }}>
-            Avec 8+ joueurs, 2 traîtres seront infiltrés (1 par équipe).
-            Ils forment une 3ème équipe secrète et ne se connaissent que par leur numéro de joueur.
+            {t('lobby.traitorsDescription')}
           </div>
         </div>
       )}

@@ -27,24 +27,23 @@ const createTransporter = () => {
   });
 };
 
-// Générer un token de vérification
-const generateVerificationToken = () => {
-  return crypto.randomBytes(32).toString('hex');
+// Générer un code de vérification à 6 chiffres
+const generateVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Envoyer l'email de vérification
-const sendVerificationEmail = async (user, token) => {
+// Ancienne fonction token (pour compatibilité)
+const generateVerificationToken = generateVerificationCode;
+
+// Envoyer l'email de vérification avec code
+const sendVerificationEmail = async (user, code) => {
   const transporter = createTransporter();
   
-  // URL de vérification
-  const verificationUrl = `${process.env.APP_URL || 'https://jeu-bleu-rouge.onrender.com'}/verify-email?token=${token}`;
+  // Code de vérification (6 chiffres)
+  const verificationCode = code;
   
   const mailOptions = {
-    from: {
-      name: 'Jeu Bleu Rouge 🎮',
-      address: process.env.EMAIL_USER
-    },
-    replyTo: process.env.EMAIL_USER,
+    from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
     to: user.email,
     subject: '🎮 Confirmez votre adresse email - Jeu Bleu Rouge',
     html: `
@@ -88,6 +87,21 @@ const sendVerificationEmail = async (user, token) => {
             line-height: 1.6;
             font-size: 16px;
           }
+          .code-box {
+            background: #f0f4ff;
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+          }
+          .code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+          }
           .button {
             display: inline-block;
             padding: 15px 40px;
@@ -126,21 +140,19 @@ const sendVerificationEmail = async (user, token) => {
               et de déduction où bleus et rouges s'affrontent !
             </p>
             <p>
-              Pour finaliser votre inscription et commencer à jouer, veuillez confirmer votre 
-              adresse email en cliquant sur le bouton ci-dessous :
+              Pour finaliser votre inscription et commencer à jouer, veuillez entrer ce code 
+              de vérification dans l'application :
             </p>
-            <div style="text-align: center;">
-              <a href="${verificationUrl}" class="button">
-                ✅ Confirmer mon email
-              </a>
+            <div class="code-box">
+              <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">Votre code de vérification</p>
+              <div class="code">${verificationCode}</div>
             </div>
-            <p style="font-size: 14px; color: #999; margin-top: 30px;">
-              Ou copiez ce lien dans votre navigateur :<br>
-              <a href="${verificationUrl}" style="color: #667eea;">${verificationUrl}</a>
+            <p style="text-align: center; color: #666;">
+              Entrez ce code dans le jeu pour activer votre compte
             </p>
             <div class="warning">
-              ⚠️ Ce lien est valable pendant <strong>24 heures</strong>. 
-              Passé ce délai, vous devrez demander un nouveau lien de vérification.
+              ⚠️ Ce code est valable pendant <strong>24 heures</strong>. 
+              Passé ce délai, vous devrez demander un nouveau code.
             </div>
             <p>
               Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.
@@ -171,11 +183,7 @@ const sendWelcomeEmail = async (user) => {
   const transporter = createTransporter();
   
   const mailOptions = {
-    from: {
-      name: 'Jeu Bleu Rouge 🎮',
-      address: process.env.EMAIL_USER
-    },
-    replyTo: process.env.EMAIL_USER,
+    from: `"Jeu Bleu Rouge" <${process.env.EMAIL_USER}>`,
     to: user.email,
     subject: '🎉 Votre compte est activé !',
     html: `
