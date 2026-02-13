@@ -67,27 +67,6 @@ function Tutorial({ onClose }) {
       )
     },
     {
-      title: "🎭 Les Traîtres (8+ joueurs)",
-      content: (
-        <div>
-          <div style={{ padding: '15px', background: 'linear-gradient(135deg, rgba(139, 0, 255, 0.1) 0%, rgba(255, 20, 147, 0.1) 100%)', borderRadius: '10px', border: '2px solid rgba(139, 0, 255, 0.3)', marginBottom: '15px' }}>
-            <h4 style={{ fontSize: '17px', marginBottom: '10px' }}>🎭 Une 3ème équipe secrète</h4>
-            <p style={{ fontSize: '15px', lineHeight: '1.6' }}>
-              Si la partie compte au moins 8 joueurs, 2 traîtres sont infiltrés (1 par équipe).
-            </p>
-          </div>
-          <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
-            <p style={{ marginBottom: '10px' }}>✅ Ils se connaissent par leur <strong>numéro de joueur</strong></p>
-            <p style={{ marginBottom: '10px' }}>✅ Ils gagnent si les 2 représentants meurent et qu'ils survivent</p>
-            <p style={{ marginBottom: '10px' }}>❌ Ils ne connaissent pas le nom réel de leur partenaire</p>
-            <p style={{ color: '#FF9800', fontWeight: 'bold' }}>
-              ⚠️ Restez discrets et sabotez subtilement votre équipe apparente !
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
       title: "⏱️ Phases de Jeu",
       content: (
         <div style={{ fontSize: '15px', lineHeight: '1.8' }}>
@@ -148,10 +127,6 @@ function Tutorial({ onClose }) {
             <strong>🔴 Équipe Rouge gagne si :</strong>
             <p style={{ marginTop: '8px' }}>Le représentant Bleu meurt ET tous les Bleus sont éliminés</p>
           </div>
-          <div style={{ marginBottom: '15px', padding: '12px', background: 'rgba(156, 39, 176, 0.1)', borderRadius: '8px' }}>
-            <strong>🎭 Traîtres gagnent si :</strong>
-            <p style={{ marginTop: '8px' }}>Les 2 représentants sont morts ET les 2 traîtres sont vivants</p>
-          </div>
           <div style={{ padding: '12px', background: 'rgba(233, 30, 99, 0.1)', borderRadius: '8px' }}>
             <strong>💕 Amoureux gagnent si :</strong>
             <p style={{ marginTop: '8px' }}>Ils sont les 2 derniers survivants (système à venir)</p>
@@ -170,15 +145,6 @@ function Tutorial({ onClose }) {
               <li>Identifiez les comportements suspects</li>
               <li>Protégez votre représentant</li>
               <li>Communiquez avec votre équipe dans le chat</li>
-            </ul>
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <strong>🎭 Pour les traîtres :</strong>
-            <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-              <li>Restez discrets, ne révélez jamais votre alliance</li>
-              <li>Sabotez subtilement votre équipe de couverture</li>
-              <li>Communiquez avec votre partenaire via les numéros</li>
-              <li>Visez l'élimination des deux représentants</li>
             </ul>
           </div>
           <div>

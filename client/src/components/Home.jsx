@@ -161,12 +161,12 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
         <div className="rules">
           <h3>📋 RÈGLES DU JEU</h3>
           <ul>
-            <li><strong>3 camps :</strong> Bleus, Rouges, et Traîtres infiltrés dans chaque équipe</li>
+            <li><strong>Deux équipes :</strong> Bleus contre Rouges, assignées aléatoirement</li>
             <li><strong>Rôles secrets :</strong> Chaque joueur reçoit un rôle unique avec des pouvoirs spéciaux</li>
-            <li><strong>Votes périodiques :</strong> Éliminez un suspect à chaque tour de vote</li>
-            <li><strong>Chat anonyme :</strong> Discutez, mentez et déduisez sans révéler votre identité</li>
-            <li><strong>Stratégie :</strong> Les traîtres doivent infiltrer et éliminer leur propre camp sans se faire démasquer</li>
-            <li><strong>Victoire :</strong> Le dernier camp avec des survivants remporte la partie</li>
+            <li><strong>Double identité :</strong> Un nom réel visible + un numéro anonyme pour le chat</li>
+            <li><strong>Votes stratégiques :</strong> Éliminez un joueur à chaque tour de vote</li>
+            <li><strong>Représentant :</strong> Élu après le 1er vote, sa mort peut faire perdre l'équipe</li>
+            <li><strong>Victoire :</strong> Éliminer le représentant adverse et tous ses coéquipiers</li>
           </ul>
         </div>
         
