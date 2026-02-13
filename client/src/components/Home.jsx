@@ -158,18 +158,6 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
           🔗 REJOINDRE UNE PARTIE
         </button>
         
-        <div className="rules">
-          <h3>📋 RÈGLES DU JEU</h3>
-          <ul>
-            <li><strong>Deux équipes :</strong> Bleus contre Rouges, assignées aléatoirement</li>
-            <li><strong>Rôles secrets :</strong> Chaque joueur reçoit un rôle unique avec des pouvoirs spéciaux</li>
-            <li><strong>Double identité :</strong> Un nom réel visible + un numéro anonyme pour le chat</li>
-            <li><strong>Votes stratégiques :</strong> Éliminez un joueur à chaque tour de vote</li>
-            <li><strong>Représentant :</strong> Élu après le 1er vote, sa mort peut faire perdre l'équipe</li>
-            <li><strong>Victoire :</strong> Éliminer le représentant adverse et tous ses coéquipiers</li>
-          </ul>
-        </div>
-        
         {/* Auth Links - Show Login/Register or Logout */}
         <div className="auth-links">
           {!user ? (
@@ -183,6 +171,18 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
               🚪 DÉCONNEXION
             </button>
           )}
+        </div>
+        
+        <div className="rules">
+          <h3>📋 RÈGLES DU JEU</h3>
+          <ul>
+            <li><strong>Deux équipes :</strong> Bleus contre Rouges, assignées aléatoirement</li>
+            <li><strong>Rôles secrets :</strong> Chaque joueur reçoit un rôle unique avec des pouvoirs spéciaux</li>
+            <li><strong>Double identité :</strong> Un nom réel visible + un numéro anonyme pour le chat</li>
+            <li><strong>Votes stratégiques :</strong> Éliminez un joueur à chaque tour de vote</li>
+            <li><strong>Représentant :</strong> Élu après le 1er vote, sa mort peut faire perdre l'équipe</li>
+            <li><strong>Victoire :</strong> Éliminer le représentant adverse et tous ses coéquipiers</li>
+          </ul>
         </div>
       </div>
       </>
