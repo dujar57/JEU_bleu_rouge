@@ -186,7 +186,7 @@ function GameHistory({ socket, gameCode }) {
               margin: 0,
               fontSize: '20px',
               color: '#2C1810',
-              fontFamily: 'Archivo Black, sans-serif'
+              fontFamily: 'Arial, Helvetica, sans-serif'
             }}>
               📜 Journal de Partie
             </h3>

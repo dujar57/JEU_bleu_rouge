@@ -75,7 +75,7 @@ function Lobby({ gameCode, gameData, pseudo, startGame }) {
               marginBottom: '18px', 
               textAlign: 'center',
               color: '#2c1810',
-              fontFamily: "'Special Elite', cursive",
+              fontFamily: 'Arial, Helvetica, sans-serif',
               letterSpacing: '2px'
             }}>⏰ DURÉE DE LA PARTIE</h3>
             <div style={{

@@ -249,7 +249,7 @@ function Tutorial({ onClose }) {
             margin: 0,
             fontSize: '28px',
             color: '#2C1810',
-            fontFamily: 'Archivo Black, sans-serif',
+            fontFamily: 'Arial, Helvetica, sans-serif',
             textAlign: 'center',
             textShadow: '2px 2px 0 rgba(255,255,255,0.3)'
           }}>

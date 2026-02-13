@@ -152,7 +152,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h2 style={{ margin: 0, fontFamily: 'Archivo Black', fontSize: '24px' }}>
+          <h2 style={{ margin: 0, fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '24px' }}>
             👤 MON COMPTE
           </h2>
           <button
@@ -192,7 +192,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                 border: 'none',
                 borderRight: '2px solid #2C5F7F',
                 cursor: 'pointer',
-                fontFamily: 'Archivo Black',
+                fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: '14px',
                 color: '#2C5F7F',
                 textTransform: 'uppercase'
@@ -398,7 +398,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                             border: '3px solid #2C5F7F',
                             borderRadius: '8px',
                             color: 'white',
-                            fontFamily: 'Archivo Black',
+                          fontFamily: 'Arial, Helvetica, sans-serif',
                             fontSize: '14px',
                             cursor: 'pointer',
                             fontWeight: 'bold'
@@ -444,7 +444,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                       border: '3px solid #2C5F7F',
                       borderRadius: '10px',
                       color: 'white',
-                      fontFamily: 'Archivo Black',
+                      fontFamily: 'Arial, Helvetica, sans-serif',
                       fontSize: '16px',
                       cursor: 'pointer'
                     }}
@@ -491,7 +491,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                           </div>
                           <div style={{ 
                             fontSize: '18px', 
-                            fontFamily: 'Courier Prime', 
+                            fontFamily: 'Arial, Helvetica, sans-serif', 
                             fontWeight: 'bold',
                             color: '#666'
                           }}>
@@ -565,7 +565,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                           }}>
                             <div style={{
                               fontSize: '24px',
-                              fontFamily: 'Courier Prime',
+                              fontFamily: 'Arial, Helvetica, sans-serif',
                               fontWeight: 'bold',
                               color: '#2C5F7F',
                               background: 'rgba(255,255,255,0.7)',
@@ -602,7 +602,7 @@ export default function AccountMenu({ user, onClose, onLogout, onRejoinGame, csr
                               border: '3px solid #2C5F7F',
                               borderRadius: '8px',
                               color: 'white',
-                              fontFamily: 'Archivo Black',
+                              fontFamily: 'Arial, Helvetica, sans-serif',
                               fontSize: '14px',
                               cursor: 'pointer',
                               transition: 'transform 0.2s'

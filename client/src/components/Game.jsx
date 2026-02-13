@@ -551,7 +551,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
               color: 'white',
               fontSize: '14px',
               fontWeight: 'bold',
-              fontFamily: 'Archivo Black',
+              fontFamily: 'Arial, Helvetica, sans-serif',
               boxShadow: '0 0 0 2px #E8D5B7, 0 8px 25px rgba(0,0,0,0.4)',
               animation: 'slideInRight 0.5s ease-out',
               cursor: 'pointer'
@@ -1420,7 +1420,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                 fontSize: window.innerWidth < 768 ? '16px' : '15px',
                 outline: 'none',
                 background: 'white',
-                fontFamily: 'Courier Prime, monospace',
+                fontFamily: 'Arial, Helvetica, sans-serif',
                 transition: 'border-color 0.2s, box-shadow 0.2s'
               }}
               onFocus={e => {
@@ -1546,7 +1546,7 @@ function Game({ gameCode, gameData, myRole, pseudo, socket }) {
                     borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
-                    fontFamily: 'Courier Prime, monospace'
+                    fontFamily: 'Arial, Helvetica, sans-serif'
                   }}
                 />
                 <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>

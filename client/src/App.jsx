@@ -249,7 +249,7 @@ function App() {
           fontSize: '14px',
           textShadow: '1px 1px 0 rgba(0,0,0,0.3)',
           boxShadow: '0 4px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.4)',
-          fontFamily: 'Courier Prime, monospace',
+          fontFamily: 'Arial, Helvetica, sans-serif',
           zIndex: 9999
         }}>
           ⚠️ Connexion au serveur en cours...
@@ -286,7 +286,7 @@ function App() {
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
             textAlign: 'center',
             color: '#2c1810',
-            fontFamily: 'Special Elite, cursive',
+            fontFamily: 'Arial, Helvetica, sans-serif',
             fontSize: '24px',
             letterSpacing: '2px'
           }}>

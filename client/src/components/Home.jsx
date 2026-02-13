@@ -173,12 +173,12 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
         <div className="auth-links">
           {!user ? (
             <>
-              <button onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>CONNEXION</button>
+              <button onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Arial, Helvetica, sans-serif' }}>CONNEXION</button>
               <span style={{ color: 'rgba(44,95,127,0.3)', fontSize: '24px' }}>|</span>
-              <button onClick={() => setMode('register')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>INSCRIPTION</button>
+              <button onClick={() => setMode('register')} style={{ background: 'none', border: 'none', color: '#2C5F7F', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Arial, Helvetica, sans-serif' }}>INSCRIPTION</button>
             </>
           ) : (
-            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#ff416c', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Archivo Black' }}>
+            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#ff416c', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'Arial, Helvetica, sans-serif' }}>
               🚪 DÉCONNEXION
             </button>
           )}

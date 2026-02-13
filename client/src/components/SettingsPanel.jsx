@@ -92,7 +92,7 @@ function SettingsPanel() {
               margin: 0,
               fontSize: '18px',
               color: '#2C1810',
-              fontFamily: 'Archivo Black, sans-serif'
+              fontFamily: 'Arial, Helvetica, sans-serif'
             }}>
               ⚙️ Paramètres
             </h3>

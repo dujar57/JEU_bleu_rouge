@@ -2,7 +2,7 @@
 # Script de déploiement automatique vers Render
 
 Write-Host "`n🚀 Déploiement vers Render - Jeu Bleu vs Rouge" -ForegroundColor Cyan
-Write-Host ("=" * 60) -ForegroundColor Gray
+Write-Host ([string]::new('=',60)) -ForegroundColor Gray
 
 # Vérifier si Git est installé
 try {
@@ -59,11 +59,11 @@ try {
     Write-Host "`n❌ Erreur lors du push" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     
-    Write-Host "`n💡 Première fois ? Configurez Git :" -ForegroundColor Yellow
-    Write-Host '   git config --global user.name "Votre Nom"' -ForegroundColor Gray
-    Write-Host '   git config --global user.email "votre@email.com"' -ForegroundColor Gray
+    Write-Host '`nPremiere fois ? Configurez Git :' -ForegroundColor Yellow
+    Write-Host '   git config --global user.name ''Votre Nom''' -ForegroundColor Gray
+    Write-Host '   git config --global user.email ''votre@email.com''' -ForegroundColor Gray
     exit 1
 }
 
-Write-Host "`n✨ Déploiement terminé !" -ForegroundColor Green
-Write-Host ("=" * 60) -ForegroundColor Gray
+Write-Host '`nDeploiement termine !'
+Write-Host '============================================================'

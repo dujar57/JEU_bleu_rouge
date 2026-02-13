@@ -114,7 +114,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
               border: '4px solid #2C5F7F',
               borderRadius: '10px',
               color: 'white',
-              fontFamily: 'Archivo Black',
+              fontFamily: 'Arial, Helvetica, sans-serif',
               fontSize: '16px',
               cursor: 'pointer',
               boxShadow: '0 4px 0 #1a3d5c, 0 6px 12px rgba(0,0,0,0.4)'
@@ -125,7 +125,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
           
           <div style={{
             fontSize: '48px',
-            fontFamily: 'Archivo Black',
+            fontFamily: 'Arial, Helvetica, sans-serif',
             color: '#2C5F7F',
             textShadow: '0 0 10px rgba(255,255,255,0.5), 0 4px 8px rgba(0,0,0,0.3)'
           }}>
@@ -141,7 +141,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
             padding: '60px',
             fontSize: '24px',
             color: '#2C5F7F',
-            fontFamily: 'Archivo Black'
+            fontFamily: 'Arial, Helvetica, sans-serif'
           }}>
             ⏳ Chargement...
           </div>
@@ -175,7 +175,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                 <div style={{ flex: 1 }}>
                   <div style={{
                     fontSize: '42px',
-                    fontFamily: 'Archivo Black',
+                    fontFamily: 'Arial, Helvetica, sans-serif',
                     color: '#2C5F7F',
                     marginBottom: '15px',
                     textShadow: '0 2px 4px rgba(0,0,0,0.2)'
@@ -224,7 +224,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                   <div style={{ fontSize: '48px', marginBottom: '10px' }}>{stat.icon}</div>
                   <div style={{
                     fontSize: '36px',
-                    fontFamily: 'Archivo Black',
+                    fontFamily: 'Arial, Helvetica, sans-serif',
                     color: stat.color,
                     marginBottom: '5px'
                   }}>
@@ -253,7 +253,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
             }}>
               <h2 style={{
                 fontSize: '32px',
-                fontFamily: 'Archivo Black',
+                fontFamily: 'Arial, Helvetica, sans-serif',
                 color: '#2C5F7F',
                 marginBottom: '25px',
                 textAlign: 'center'
@@ -269,7 +269,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                   fontSize: '18px'
                 }}>
                   <div style={{ fontSize: '64px', marginBottom: '20px' }}>⏸️</div>
-                  <div style={{ fontFamily: 'Archivo Black' }}>Aucune partie en cours</div>
+                  <div style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Aucune partie en cours</div>
                   <div style={{ fontSize: '14px', marginTop: '10px' }}>Créez ou rejoignez une partie !</div>
                 </div>
               ) : (
@@ -303,7 +303,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                       
                       <div style={{
                         fontSize: '28px',
-                        fontFamily: 'Courier Prime',
+                        fontFamily: 'Arial, Helvetica, sans-serif',
                         fontWeight: 'bold',
                         textAlign: 'center',
                         color: '#2C5F7F',
@@ -344,7 +344,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                           border: '3px solid #2C5F7F',
                           borderRadius: '8px',
                           color: 'white',
-                          fontFamily: 'Archivo Black',
+                          fontFamily: 'Arial, Helvetica, sans-serif',
                           fontSize: '14px',
                           cursor: 'pointer',
                           transition: 'transform 0.2s'
@@ -370,7 +370,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
             }}>
               <h2 style={{
                 fontSize: '32px',
-                fontFamily: 'Archivo Black',
+                fontFamily: 'Arial, Helvetica, sans-serif',
                 color: '#2C5F7F',
                 marginBottom: '25px',
                 textAlign: 'center'
@@ -386,7 +386,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                   fontSize: '18px'
                 }}>
                   <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎮</div>
-                  <div style={{ fontFamily: 'Archivo Black' }}>Aucune partie jouée pour le moment</div>
+                  <div style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Aucune partie jouée pour le moment</div>
                   <div style={{ fontSize: '14px', marginTop: '10px' }}>Lancez votre première partie !</div>
                 </div>
               ) : (
@@ -414,7 +414,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <div style={{
                           fontSize: '28px',
-                          fontFamily: 'Archivo Black',
+                          fontFamily: 'Arial, Helvetica, sans-serif',
                           color: match.won ? '#2e7d32' : '#c62828'
                         }}>
                           {match.won ? '🏆 VICTOIRE' : '💀 DÉFAITE'}
@@ -422,7 +422,7 @@ export default function ProfilePage({ user, onBack, onRejoinGame }) {
                         
                         <div style={{
                           fontSize: '24px',
-                          fontFamily: 'Courier Prime',
+                          fontFamily: 'Arial, Helvetica, sans-serif',
                           fontWeight: 'bold',
                           color: '#2C5F7F',
                           background: 'rgba(255,255,255,0.7)',
