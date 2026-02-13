@@ -94,17 +94,23 @@ const authLimiter = rateLimit({
 
 // CORS sécurisé - RENDER UNIQUEMENT
 const allowedOrigins = [
-  'https://jeu-bleu-rouge.onrender.com'
+  'https://jeu-bleu-rouge.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Autoriser localhost sans origin en dev
+    if (!origin && process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
     // En production, rejeter les requêtes sans origin (possibles attaques)
     if (!origin && process.env.NODE_ENV === 'production') {
       return callback(new Error('Non autorisé par CORS'));
     }
-    // Accepter les origins autorisées ou les requêtes locales (sans origin)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Accepter les origins autorisées
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn('⚠️ Origine rejetée par CORS:', origin);
