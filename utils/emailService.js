@@ -37,10 +37,16 @@ const generateVerificationToken = generateVerificationCode;
 
 // Envoyer l'email de vérification avec code
 const sendVerificationEmail = async (user, code) => {
+  console.log(`📧 [emailService] Début sendVerificationEmail pour ${user.email}`);
+  console.log(`📧 [emailService] EMAIL_SERVICE: ${process.env.EMAIL_SERVICE}`);
+  console.log(`📧 [emailService] EMAIL_USER: ${process.env.EMAIL_USER}`);
+  console.log(`📧 [emailService] EMAIL_PASSWORD configuré: ${process.env.EMAIL_PASSWORD ? 'OUI' : 'NON'}`);
+  
   const transporter = createTransporter();
   
   // Code de vérification (6 chiffres)
   const verificationCode = code;
+  console.log(`📧 [emailService] Code à envoyer: ${verificationCode}`);
   
   const mailOptions = {
     from: `"Jeu Bleu vs Rouge" <${process.env.EMAIL_USER}>`,
@@ -308,11 +314,18 @@ const sendVerificationEmail = async (user, code) => {
   };
   
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Email de vérification envoyé à ${user.email}`);
+    console.log(`📧 [emailService] Envoi en cours vers ${user.email}...`);
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ [emailService] Email de vérification envoyé à ${user.email}`);
+    console.log(`✅ [emailService] Message ID: ${result.messageId}`);
     return true;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+    console.error('❌ [emailService] ERREUR lors de l\'envoi de l\'email:', error);
+    console.error('❌ [emailService] Error details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
     return false;
   }
 };
