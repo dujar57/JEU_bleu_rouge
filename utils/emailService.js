@@ -4,13 +4,18 @@ const crypto = require('crypto');
 // Configuration du transporteur email
 // Vous pouvez utiliser Gmail, SendGrid, Mailgun, etc.
 const createTransporter = () => {
-  // Option 1: Gmail (nécessite un mot de passe d'application)
+  // Gmail avec port 465 (SSL) - Compatible avec Render et autres hébergeurs
   if (process.env.EMAIL_SERVICE === 'gmail') {
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // true pour SSL sur port 465
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
+      },
+      tls: {
+        rejectUnauthorized: false // Nécessaire pour certains hébergeurs
       }
     });
   }
