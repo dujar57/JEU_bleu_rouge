@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://jeu-bleu-rouge.onrender.com';
 
 /**
  * Effectue une requête fetch avec headers CSRF et JWT
