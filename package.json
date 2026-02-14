@@ -1,10 +1,11 @@
 {
   "name": "jeu-bleu-rouge-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Serveur de jeu Bleu vs Rouge",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "prebuild": "echo '🧹 Nettoyage du cache...'",
     "dev": "nodemon server.js",
     "dev:utf8": "chcp 65001 && nodemon server.js",
     "start:utf8": "chcp 65001 && node server.js",
