@@ -330,15 +330,22 @@ router.post('/resend-verification', auth, async (req, res) => {
     }
     
     // Générer un nouveau token
-    // const verificationToken = generateVerificationToken();
-    // user.emailVerificationToken = verificationToken;
-    // user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
     await user.save();
     
     // Envoyer l'email
-    // const emailSent = await sendVerificationEmail(user, verificationToken);
+    const emailSent = await sendVerificationEmail(user, verificationToken);
     
-    res.json({ message: 'Email de vérification renvoyé avec succès' });
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email' });
+    }
+    
+    res.json({ 
+      message: 'Email de vérification renvoyé avec succès. Vérifiez votre boîte de réception.',
+      success: true 
+    });
   } catch (error) {
     console.error('Erreur renvoi email:', error);
     res.status(500).json({ error: 'Erreur lors du renvoi de l\'email' });
