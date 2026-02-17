@@ -1,0 +1,26 @@
+{
+  "name": "Jeu Bleu vs Rouge",
+  "short_name": "Bleu vs Rouge",
+  "description": "Jeu de déduction sociale - Infiltration, traîtres et élimination",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#4FA8A8",
+  "theme_color": "#4FA8A8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-bvr.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-bvr.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "fr-FR"
+}
