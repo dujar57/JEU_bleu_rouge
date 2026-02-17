@@ -122,6 +122,8 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize()); // Protection injection NoSQL
 
 // ✅ SÉCURITÉ : Protection CSRF et sanitization HTML
+// ⚠️ CSRF TEMPORAIREMENT DÉSACTIVÉ - À réactiver après tests
+/*
 const {
   generateToken, // Génère un token CSRF
   doubleCsrfProtection, // Middleware de protection
@@ -137,17 +139,18 @@ const {
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
 });
+*/
 
 // Appliquer la sanitization HTML sur toutes les entrées
 app.use(sanitizeMiddleware);
 
-// Route pour obtenir un token CSRF
-app.get('/api/csrf-token', (req, res) => {
-  const csrfToken = generateToken(req, res);
-  res.json({ csrfToken });
-});
-
 // ⚠️ CSRF TEMPORAIREMENT DÉSACTIVÉ - À réactiver après tests
+// Route pour obtenir un token CSRF
+// app.get('/api/csrf-token', (req, res) => {
+//   const csrfToken = generateToken(req, res);
+//   res.json({ csrfToken });
+// });
+
 // app.use('/api/auth', doubleCsrfProtection);
 // app.use('/api/game', doubleCsrfProtection);
 
