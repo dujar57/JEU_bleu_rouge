@@ -160,14 +160,21 @@ const sendVerificationEmail = async (user, token) => {
     // Essayer avec Resend d'abord (recommandé pour Render)
     const resend = createEmailService();
     if (resend) {
-      await resend.emails.send({
-        from: 'Jeu Bleu Rouge <onboarding@resend.dev>',
-        to: user.email,
-        subject: '🎮 Confirmez votre adresse email - Jeu Bleu Rouge',
-        html: htmlContent
-      });
-      console.log(`✅ Email de vérification envoyé via Resend à ${user.email}`);
-      return true;
+      try {
+        const result = await resend.emails.send({
+          from: 'Jeu Bleu Rouge <onboarding@resend.dev>',
+          to: user.email,
+          subject: '🎮 Confirmez votre adresse email - Jeu Bleu Rouge',
+          html: htmlContent
+        });
+        console.log(`✅ Email de vérification envoyé via Resend à ${user.email}`);
+        console.log('📧 Resend response:', result);
+        return true;
+      } catch (resendError) {
+        console.error('❌ Erreur Resend:', resendError);
+        console.log('🔄 Tentative avec Nodemailer en fallback...');
+        // Continue vers le fallback Nodemailer
+      }
     }
     
     // Fallback sur Nodemailer si pas de Resend
@@ -238,14 +245,21 @@ const sendWelcomeEmail = async (user) => {
     // Essayer d'abord avec Resend
     const resend = createEmailService();
     if (resend) {
-      await resend.emails.send({
-        from: 'Jeu Bleu Rouge <onboarding@resend.dev>',
-        to: user.email,
-        subject: '🎉 Votre compte est activé !',
-        html: htmlContent
-      });
-      console.log(`✅ Email de bienvenue envoyé via Resend à ${user.email}`);
-      return;
+      try {
+        const result = await resend.emails.send({
+          from: 'Jeu Bleu Rouge <onboarding@resend.dev>',
+          to: user.email,
+          subject: '🎉 Votre compte est activé !',
+          html: htmlContent
+        });
+        console.log(`✅ Email de bienvenue envoyé via Resend à ${user.email}`);
+        console.log('📧 Resend response:', result);
+        return;
+      } catch (resendError) {
+        console.error('❌ Erreur Resend:', resendError);
+        console.log('🔄 Tentative avec Nodemailer en fallback...');
+        // Continue vers le fallback Nodemailer
+      }
     }
     
     // Fallback sur Nodemailer si pas de Resend
