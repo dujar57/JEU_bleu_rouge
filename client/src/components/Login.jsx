@@ -5,13 +5,14 @@ export default function Login({ onBack, onLoginSuccess, csrfToken }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // ===== VÉRIFICATION EMAIL DÉSACTIVÉE =====
+  // const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setEmailVerificationRequired(false);
     setLoading(true);
 
     try {
@@ -29,13 +30,16 @@ export default function Login({ onBack, onLoginSuccess, csrfToken }) {
         if (onLoginSuccess) onLoginSuccess(data.user);
         onBack();
       } else {
-        // Vérifier si c'est un problème de vérification d'email
-        if (data.emailVerificationRequired) {
-          setEmailVerificationRequired(true);
-          setError('📧 Votre email n\'est pas encore vérifié.\n\nVeuillez consulter votre boîte mail (' + (data.email || email) + ') et cliquer sur le lien de confirmation.');
-        } else {
-          setError(data.message || data.error || 'Erreur de connexion');
-        }
+        // ⚠️ MODIFIÉ: Plus de vérification email
+        setError(data.message || data.error || 'Erreur de connexion');
+        
+        // ❌ ANCIEN SYSTÈME (pour réactivation future):
+        // if (data.emailVerificationRequired) {
+        //   setEmailVerificationRequired(true);
+        //   setError('📧 Votre email n\'est pas encore vérifié.\n\nVeuillez consulter votre boîte mail (' + (data.email || email) + ') et cliquer sur le lien de confirmation.');
+        // } else {
+        //   setError(data.message || data.error || 'Erreur de connexion');
+        // }
       }
     } catch (err) {
       setError('Erreur réseau - Veuillez réessayer');
@@ -55,7 +59,7 @@ export default function Login({ onBack, onLoginSuccess, csrfToken }) {
       {error && (
         <div style={{
           padding: '15px',
-          background: emailVerificationRequired ? '#ff9800' : '#ff6b6b',
+          background: '#ff6b6b',
           color: 'white',
           borderRadius: '10px',
           marginBottom: '20px',

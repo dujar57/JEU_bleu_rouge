@@ -104,34 +104,36 @@ router.post('/register', authLimiter, [
       });
     }
     
-    // Générer le code de vérification à 6 chiffres
-    const verificationToken = generateVerificationToken();
-    const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    // ===== VÉRIFICATION EMAIL DÉSACTIVÉE =====
+    // Pour réactiver: décommenter le code ci-dessous et modifier emailVerified: false
     
-    // Créer l'utilisateur
+    // const verificationToken = generateVerificationToken();
+    // const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    
+    // Créer l'utilisateur (email vérifié par défaut)
     const user = new User({ 
       username, 
       email, 
       password,
-      emailVerificationToken: verificationToken,
-      emailVerificationExpires: tokenExpiry
+      emailVerified: true  // ⚠️ Modifié: email vérifié automatiquement (pas de domaine)
+      // Pour réactiver la vérification:
+      // emailVerified: false,
+      // emailVerificationToken: verificationToken,
+      // emailVerificationExpires: tokenExpiry
     });
-    
-    // Générer le token de vérification email
-    // const verificationToken = generateVerificationToken();
-    // user.emailVerificationToken = verificationToken;
-    // user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
     
     await user.save();
     
-    // Envoyer l'email de vérification
-    try {
-      await sendVerificationEmail(user, verificationToken);
-      console.log(`✅ Email de vérification envoyé à ${email}`);
-    } catch (emailError) {
-      console.error('❌ Erreur envoi email:', emailError);
-      // On continue même si l'email échoue
-    }
+    // ===== ENVOI EMAIL DÉSACTIVÉ =====
+    // Pour réactiver: décommenter le code ci-dessous
+    // try {
+    //   await sendVerificationEmail(user, verificationToken);
+    //   console.log(`✅ Email de vérification envoyé à ${email}`);
+    // } catch (emailError) {
+    //   console.error('❌ Erreur envoi email:', emailError);
+    // }
+    
+    console.log(`✅ Utilisateur créé: ${username} (email auto-vérifié)`);
 
     // Créer le token JWT
     const jwtSecret = process.env.JWT_SECRET;
@@ -198,14 +200,15 @@ router.post('/login', authLimiter, [
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
     
-    // Vérifier si l'email est confirmé
-    if (!user.emailVerified) {
-      return res.status(403).json({ 
-        error: 'Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.',
-        emailVerificationRequired: true,
-        email: user.email
-      });
-    }
+    // ===== VÉRIFICATION EMAIL DÉSACTIVÉE =====
+    // Pour réactiver: décommenter le code ci-dessous
+    // if (!user.emailVerified) {
+    //   return res.status(403).json({ 
+    //     error: 'Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.',
+    //     emailVerificationRequired: true,
+    //     email: user.email
+    //   });
+    // }
     
     // Créer le token
     const jwtSecret = process.env.JWT_SECRET;
@@ -275,6 +278,10 @@ router.post('/logout', auth, async (req, res) => {
   }
 });
 
+// ===== ROUTES DE VÉRIFICATION EMAIL DÉSACTIVÉES =====
+// Pour réactiver: décommenter les routes ci-dessous
+
+/*
 // Vérifier l'email avec le token
 // Route pour vérifier l'email avec un code à 6 chiffres (GET pour anciens liens, POST pour nouveau système)
 router.get('/verify-email', async (req, res) => {
@@ -397,6 +404,7 @@ router.post('/resend-verification', auth, async (req, res) => {
     res.status(500).json({ error: 'Erreur lors du renvoi de l\'email' });
   }
 });
+*/
 
 // GET /profile - Récupérer le profil utilisateur avec historique
 router.get('/profile', auth, async (req, res) => {

@@ -8,9 +8,12 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showVerificationCode, setShowVerificationCode] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  
+  // ===== VÉRIFICATION EMAIL DÉSACTIVÉE =====
+  // Les lignes ci-dessous sont conservées pour réactivation future
+  // const [showVerificationCode, setShowVerificationCode] = useState(false);
+  // const [verificationCode, setVerificationCode] = useState('');
+  // const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,9 +40,17 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
       const data = await response.json();
 
       if (response.ok) {
-        setRegisteredEmail(email);
-        setShowVerificationCode(true);
-        setError('');
+        // ⚠️ MODIFIÉ: Email auto-vérifié, connexion directe
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        alert('✅ Compte créé avec succès !\n\nVous êtes maintenant connecté.');
+        if (onRegisterSuccess) onRegisterSuccess(data.user);
+        onBack();
+        
+        // ❌ ANCIEN SYSTÈME (pour réactivation future):
+        // setRegisteredEmail(email);
+        // setShowVerificationCode(true);
+        // setError('');
       } else {
         setError(data.error || data.message || 'Erreur lors de l\'inscription');
       }
@@ -50,7 +61,8 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
       setLoading(false);
     }
   };
-
+  
+  /* ===== CODE DE VÉRIFICATION DÉSACTIVÉ (pour réactivation future) =====
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     setError('');
@@ -174,6 +186,7 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
       </div>
     );
   }
+  */
 
   // Interface d'inscription (formulaire initial)
   return (
