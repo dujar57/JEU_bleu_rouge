@@ -2,8 +2,19 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 const sgMail = require('@sendgrid/mail');
+const SibApiV3Sdk = require('@getbrevo/brevo');
 
-// Configuration SendGrid (prioritaire)
+// Configuration Brevo (prioritaire - 300 emails/jour gratuit)
+const createBrevoService = () => {
+  if (process.env.BREVO_API_KEY) {
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+    return apiInstance;
+  }
+  return null;
+};
+
+// Configuration SendGrid (fallback 1)
 const createSendGridService = () => {
   if (process.env.SENDGRID_API_KEY) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -12,7 +23,7 @@ const createSendGridService = () => {
   return null;
 };
 
-// Configuration Resend (fallback 1)
+// Configuration Resend (fallback 2)
 const createResendService = () => {
   if (process.env.RESEND_API_KEY) {
     return new Resend(process.env.RESEND_API_KEY);
@@ -164,7 +175,29 @@ const sendVerificationEmail = async (user, token) => {
   `;
   
   try {
-    // 1️⃣ PRIORITÉ : SendGrid (fonctionne sur Render, 100 emails/jour gratuit)
+    // 1️⃣ PRIORITÉ : Brevo (300 emails/jour gratuit, entreprise française)
+    const brevo = createBrevoService();
+    if (brevo) {
+      try {
+        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+        sendSmtpEmail.sender = { 
+          email: process.env.BREVO_FROM_EMAIL || process.env.EMAIL_USER,
+          name: 'Jeu Bleu Rouge'
+        };
+        sendSmtpEmail.to = [{ email: user.email }];
+        sendSmtpEmail.subject = '🎮 Confirmez votre adresse email - Jeu Bleu Rouge';
+        sendSmtpEmail.htmlContent = htmlContent;
+        
+        await brevo.sendTransacEmail(sendSmtpEmail);
+        console.log(`✅ Email de vérification envoyé via Brevo à ${user.email}`);
+        return true;
+      } catch (brevoError) {
+        console.error('❌ Erreur Brevo:', brevoError.response?.body || brevoError.message);
+        console.log('🔄 Tentative avec SendGrid en fallback...');
+      }
+    }
+
+    // 2️⃣ FALLBACK 1 : SendGrid (fonctionne sur Render, 100 emails/jour gratuit)
     const sendgrid = createSendGridService();
     if (sendgrid) {
       try {
@@ -183,7 +216,7 @@ const sendVerificationEmail = async (user, token) => {
       }
     }
 
-    // 2️⃣ FALLBACK 1 : Resend (nécessite domaine vérifié pour production)
+    // 3️⃣ FALLBACK 2 : Resend (nécessite domaine vérifié pour production)
     const resend = createResendService();
     if (resend) {
       try {
@@ -202,7 +235,7 @@ const sendVerificationEmail = async (user, token) => {
       }
     }
     
-    // 3️⃣ FALLBACK 2 : Nodemailer/SMTP (ne marche pas sur Render)
+    // 4️⃣ FALLBACK 3 : Nodemailer/SMTP (ne marche pas sur Render)
     const transporter = createTransporter();
     const mailOptions = {
       from: {
@@ -267,7 +300,29 @@ const sendWelcomeEmail = async (user) => {
   `;
   
   try {
-    // 1️⃣ PRIORITÉ : SendGrid
+    // 1️⃣ PRIORITÉ : Brevo
+    const brevo = createBrevoService();
+    if (brevo) {
+      try {
+        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+        sendSmtpEmail.sender = { 
+          email: process.env.BREVO_FROM_EMAIL || process.env.EMAIL_USER,
+          name: 'Jeu Bleu Rouge'
+        };
+        sendSmtpEmail.to = [{ email: user.email }];
+        sendSmtpEmail.subject = '🎉 Votre compte est activé !';
+        sendSmtpEmail.htmlContent = htmlContent;
+        
+        await brevo.sendTransacEmail(sendSmtpEmail);
+        console.log(`✅ Email de bienvenue envoyé via Brevo à ${user.email}`);
+        return;
+      } catch (brevoError) {
+        console.error('❌ Erreur Brevo:', brevoError.response?.body || brevoError.message);
+        console.log('🔄 Tentative avec SendGrid en fallback...');
+      }
+    }
+
+    // 2️⃣ FALLBACK 1 : SendGrid
     const sendgrid = createSendGridService();
     if (sendgrid) {
       try {
