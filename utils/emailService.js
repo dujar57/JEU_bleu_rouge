@@ -1,11 +1,36 @@
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const { Resend } = require('resend');
-const sgMail = require('@sendgrid/mail');
-const SibApiV3Sdk = require('@getbrevo/brevo');
+
+// ===== IMPORTS OPTIONNELS (pour éviter les erreurs si packages non installés) =====
+let nodemailer, Resend, sgMail, SibApiV3Sdk;
+
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  console.log('⚠️  nodemailer non installé (service email désactivé)');
+}
+
+try {
+  const resendModule = require('resend');
+  Resend = resendModule.Resend;
+} catch (e) {
+  console.log('⚠️  resend non installé (service email désactivé)');
+}
+
+try {
+  sgMail = require('@sendgrid/mail');
+} catch (e) {
+  console.log('⚠️  @sendgrid/mail non installé (service email désactivé)');
+}
+
+try {
+  SibApiV3Sdk = require('@getbrevo/brevo');
+} catch (e) {
+  console.log('⚠️  @getbrevo/brevo non installé (service email désactivé)');
+}
 
 // Configuration Brevo (prioritaire - 300 emails/jour gratuit)
 const createBrevoService = () => {
+  if (!SibApiV3Sdk) return null;
   if (process.env.BREVO_API_KEY) {
     const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
     apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
@@ -16,6 +41,7 @@ const createBrevoService = () => {
 
 // Configuration SendGrid (fallback 1)
 const createSendGridService = () => {
+  if (!sgMail) return null;
   if (process.env.SENDGRID_API_KEY) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     return sgMail;
@@ -25,6 +51,7 @@ const createSendGridService = () => {
 
 // Configuration Resend (fallback 2)
 const createResendService = () => {
+  if (!Resend) return null;
   if (process.env.RESEND_API_KEY) {
     return new Resend(process.env.RESEND_API_KEY);
   }
@@ -33,6 +60,8 @@ const createResendService = () => {
 
 // Configuration du transporteur email (Nodemailer)
 const createTransporter = () => {
+  if (!nodemailer) return null;
+  
   // Option 1: Gmail (nécessite un mot de passe d'application)
   if (process.env.EMAIL_SERVICE === 'gmail') {
     return nodemailer.createTransport({
@@ -45,7 +74,7 @@ const createTransporter = () => {
   }
   
   // Option 2: Service SMTP personnalisé
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
     secure: false, // true pour le port 465, false pour les autres ports
