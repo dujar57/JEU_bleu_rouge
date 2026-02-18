@@ -8,6 +8,9 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVerificationCode, setShowVerificationCode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,9 +37,9 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
       const data = await response.json();
 
       if (response.ok) {
-        alert('✅ Inscription réussie !\n\n📧 Un email de confirmation a été envoyé à ' + email + '\n\nVeuillez vérifier votre boîte de réception et cliquer sur le lien de validation avant de vous connecter.');
-        if (onRegisterSuccess) onRegisterSuccess(data);
-        onBack();
+        setRegisteredEmail(email);
+        setShowVerificationCode(true);
+        setError('');
       } else {
         setError(data.error || data.message || 'Erreur lors de l\'inscription');
       }
@@ -48,6 +51,131 @@ export default function Register({ onBack, onRegisterSuccess, csrfToken }) {
     }
   };
 
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await secureFetch('/api/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ token: verificationCode })
+      }, csrfToken);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('✅ Email vérifié avec succès !\n\nVous pouvez maintenant vous connecter.');
+        if (onRegisterSuccess) onRegisterSuccess(data);
+        onBack();
+      } else {
+        setError(data.error || data.message || 'Code invalide ou expiré');
+      }
+    } catch (err) {
+      console.error('Erreur vérification:', err);
+      setError('Erreur réseau - Veuillez réessayer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Interface de vérification du code
+  if (showVerificationCode) {
+    return (
+      <div className="container">
+        <div className="logo-circle">
+          <img src="/logo-bvr.png" alt="Logo Bleu vs Rouge" className="logo-img" />
+        </div>
+        
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>📧 VÉRIFICATION EMAIL</h2>
+
+        <div style={{
+          padding: '20px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          borderRadius: '15px',
+          marginBottom: '25px',
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
+            📨 Un code de vérification a été envoyé à :
+          </p>
+          <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+            {registeredEmail}
+          </p>
+        </div>
+
+        {error && (
+          <div style={{
+            padding: '15px',
+            background: '#ff6b6b',
+            color: 'white',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleVerifyCode}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>
+              🔢 Entrez le code à 6 chiffres
+            </label>
+            <input
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+              maxLength={6}
+              pattern="\d{6}"
+              placeholder="123456"
+              style={{
+                width: '100%',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '3px solid #667eea',
+                fontSize: '32px',
+                textAlign: 'center',
+                fontFamily: 'monospace',
+                letterSpacing: '10px',
+                fontWeight: 'bold'
+              }}
+            />
+            <p style={{ 
+              textAlign: 'center', 
+              fontSize: '14px', 
+              color: '#666', 
+              marginTop: '10px' 
+            }}>
+              ⏱️ Le code expire dans 15 minutes
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || verificationCode.length !== 6}
+            className="btn-primary"
+            style={{ width: '100%', marginBottom: '15px' }}
+          >
+            {loading ? '⏳ Vérification...' : '✅ VÉRIFIER'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowVerificationCode(false)}
+            className="btn-secondary"
+            style={{ width: '100%' }}
+          >
+            ← RETOUR
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // Interface d'inscription (formulaire initial)
   return (
     <div className="container">
       <div className="logo-circle">

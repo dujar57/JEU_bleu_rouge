@@ -104,9 +104,9 @@ router.post('/register', authLimiter, [
       });
     }
     
-    // Générer le token de vérification
+    // Générer le code de vérification à 6 chiffres
     const verificationToken = generateVerificationToken();
-    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
     // Créer l'utilisateur
     const user = new User({ 
@@ -276,23 +276,69 @@ router.post('/logout', auth, async (req, res) => {
 });
 
 // Vérifier l'email avec le token
+// Route pour vérifier l'email avec un code à 6 chiffres (GET pour anciens liens, POST pour nouveau système)
 router.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
     
     if (!token) {
-      return res.status(400).json({ error: 'Token de vérification manquant' });
+      return res.status(400).json({ error: 'Code de vérification manquant' });
     }
     
-    // Trouver l'utilisateur avec ce token
+    // Trouver l'utilisateur avec ce code
     const user = await User.findOne({
       emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() } // Token non expiré
+      emailVerificationExpires: { $gt: Date.now() } // Code non expiré
     });
     
     if (!user) {
       return res.status(400).json({ 
-        error: 'Token invalide ou expiré. Veuillez demander un nouveau lien de vérification.' 
+        error: 'Code invalide ou expiré (15 minutes). Veuillez demander un nouveau code.' 
+      });
+    }
+    
+    // Vérifier l'email
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+    
+    // Envoyer l'email de bienvenue
+    try {
+      await sendWelcomeEmail(user);
+      console.log(`🎉 Email de bienvenue envoyé à ${user.email}`);
+    } catch (emailError) {
+      console.error('Erreur envoi email bienvenue:', emailError);
+    }
+    
+    res.json({ 
+      message: 'Email vérifié avec succès ! Vous pouvez maintenant vous connecter.',
+      success: true
+    });
+  } catch (error) {
+    console.error('Erreur vérification email:', error);
+    res.status(500).json({ error: 'Erreur lors de la vérification de l\'email' });
+  }
+});
+
+// Route POST pour vérifier l'email avec le code (nouveau système)
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Code de vérification manquant' });
+    }
+    
+    // Trouver l'utilisateur avec ce code
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() } // Code non expiré
+    });
+    
+    if (!user) {
+      return res.status(400).json({ 
+        error: 'Code invalide ou expiré. Le code est valable 15 minutes.' 
       });
     }
     
@@ -332,7 +378,7 @@ router.post('/resend-verification', auth, async (req, res) => {
     // Générer un nouveau token
     const verificationToken = generateVerificationToken();
     user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 heures
+    user.emailVerificationExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
     
     // Envoyer l'email
@@ -470,7 +516,7 @@ router.put('/update-profile',
         try {
           const verificationToken = generateVerificationToken();
           user.emailVerificationToken = verificationToken;
-          user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24h
+          user.emailVerificationExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
           await sendVerificationEmail(user, verificationToken);
         } catch (emailError) {
           console.error('Erreur envoi email vérification:', emailError);

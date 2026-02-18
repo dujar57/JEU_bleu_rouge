@@ -56,16 +56,13 @@ const createTransporter = () => {
   });
 };
 
-// Générer un token de vérification
+// Générer un code de vérification à 6 chiffres
 const generateVerificationToken = () => {
-  return crypto.randomBytes(32).toString('hex');
+  return Math.floor(100000 + Math.random() * 900000).toString(); // Code entre 100000 et 999999
 };
 
 // Envoyer l'email de vérification
-const sendVerificationEmail = async (user, token) => {
-  // URL de vérification
-  const verificationUrl = `${process.env.APP_URL || 'https://jeu-bleu-rouge.onrender.com'}/verify-email?token=${token}`;
-  
+const sendVerificationEmail = async (user, code) => {
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -131,6 +128,18 @@ const sendVerificationEmail = async (user, token) => {
           margin: 20px 0;
           color: #856404;
         }
+        .code-box {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-size: 48px;
+          font-weight: bold;
+          letter-spacing: 10px;
+          padding: 30px;
+          border-radius: 15px;
+          text-align: center;
+          margin: 30px 0;
+          font-family: 'Courier New', monospace;
+        }
       </style>
     </head>
     <body>
@@ -145,21 +154,14 @@ const sendVerificationEmail = async (user, token) => {
             et de déduction où bleus et rouges s'affrontent !
           </p>
           <p>
-            Pour finaliser votre inscription et commencer à jouer, veuillez confirmer votre 
-            adresse email en cliquant sur le bouton ci-dessous :
+            Pour finaliser votre inscription et commencer à jouer, veuillez entrer ce code de vérification sur le site :
           </p>
-          <div style="text-align: center;">
-            <a href="${verificationUrl}" class="button">
-              ✅ Confirmer mon email
-            </a>
+          <div class="code-box">
+            ${code}
           </div>
-          <p style="font-size: 14px; color: #999; margin-top: 30px;">
-            Ou copiez ce lien dans votre navigateur :<br>
-            <a href="${verificationUrl}" style="color: #667eea;">${verificationUrl}</a>
-          </p>
           <div class="warning">
-            ⚠️ Ce lien est valable pendant <strong>24 heures</strong>. 
-            Passé ce délai, vous devrez demander un nouveau lien de vérification.
+            ⚠️ Ce code est valable pendant <strong>15 minutes</strong>. 
+            Ne le partagez avec personne !
           </div>
           <p>
             Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.
