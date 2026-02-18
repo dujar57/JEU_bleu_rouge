@@ -68,7 +68,7 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
   }
 
   if (mode === 'register') {
-    return <Register onBack={() => setMode('')} csrfToken={csrfToken} />;
+    return <Register onBack={() => setMode('')} onRegisterSuccess={handleLoginSuccess} csrfToken={csrfToken} />;
   }
 
   if (mode === '') {
@@ -194,7 +194,7 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
   }
 
   if (mode === 'register') {
-    return <Register onBack={() => setMode('')} />;
+    return <Register onBack={() => setMode('')} onRegisterSuccess={handleLoginSuccess} csrfToken={csrfToken} />;
   }
 
   if (mode === 'create') {
