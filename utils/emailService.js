@@ -1,15 +1,22 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { Resend } = require('resend');
+const sgMail = require('@sendgrid/mail');
 
-// Configuration du service email
-const createEmailService = () => {
-  // Si on utilise Resend (recommandé pour Render)
+// Configuration SendGrid (prioritaire)
+const createSendGridService = () => {
+  if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    return sgMail;
+  }
+  return null;
+};
+
+// Configuration Resend (fallback 1)
+const createResendService = () => {
   if (process.env.RESEND_API_KEY) {
     return new Resend(process.env.RESEND_API_KEY);
   }
-  
-  // Fallback sur Nodemailer si pas de Resend
   return null;
 };
 
@@ -157,8 +164,27 @@ const sendVerificationEmail = async (user, token) => {
   `;
   
   try {
-    // Essayer avec Resend d'abord (recommandé pour Render)
-    const resend = createEmailService();
+    // 1️⃣ PRIORITÉ : SendGrid (fonctionne sur Render, 100 emails/jour gratuit)
+    const sendgrid = createSendGridService();
+    if (sendgrid) {
+      try {
+        const msg = {
+          to: user.email,
+          from: process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER,
+          subject: '🎮 Confirmez votre adresse email - Jeu Bleu Rouge',
+          html: htmlContent
+        };
+        await sendgrid.send(msg);
+        console.log(`✅ Email de vérification envoyé via SendGrid à ${user.email}`);
+        return true;
+      } catch (sendgridError) {
+        console.error('❌ Erreur SendGrid:', sendgridError.response?.body || sendgridError.message);
+        console.log('🔄 Tentative avec Resend en fallback...');
+      }
+    }
+
+    // 2️⃣ FALLBACK 1 : Resend (nécessite domaine vérifié pour production)
+    const resend = createResendService();
     if (resend) {
       try {
         const result = await resend.emails.send({
@@ -173,11 +199,10 @@ const sendVerificationEmail = async (user, token) => {
       } catch (resendError) {
         console.error('❌ Erreur Resend:', resendError);
         console.log('🔄 Tentative avec Nodemailer en fallback...');
-        // Continue vers le fallback Nodemailer
       }
     }
     
-    // Fallback sur Nodemailer si pas de Resend
+    // 3️⃣ FALLBACK 2 : Nodemailer/SMTP (ne marche pas sur Render)
     const transporter = createTransporter();
     const mailOptions = {
       from: {
@@ -242,8 +267,27 @@ const sendWelcomeEmail = async (user) => {
   `;
   
   try {
-    // Essayer d'abord avec Resend
-    const resend = createEmailService();
+    // 1️⃣ PRIORITÉ : SendGrid
+    const sendgrid = createSendGridService();
+    if (sendgrid) {
+      try {
+        const msg = {
+          to: user.email,
+          from: process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER,
+          subject: '🎉 Votre compte est activé !',
+          html: htmlContent
+        };
+        await sendgrid.send(msg);
+        console.log(`✅ Email de bienvenue envoyé via SendGrid à ${user.email}`);
+        return;
+      } catch (sendgridError) {
+        console.error('❌ Erreur SendGrid:', sendgridError.response?.body || sendgridError.message);
+        console.log('🔄 Tentative avec Resend en fallback...');
+      }
+    }
+
+    // 2️⃣ FALLBACK 1 : Resend
+    const resend = createResendService();
     if (resend) {
       try {
         const result = await resend.emails.send({
@@ -258,11 +302,10 @@ const sendWelcomeEmail = async (user) => {
       } catch (resendError) {
         console.error('❌ Erreur Resend:', resendError);
         console.log('🔄 Tentative avec Nodemailer en fallback...');
-        // Continue vers le fallback Nodemailer
       }
     }
     
-    // Fallback sur Nodemailer si pas de Resend
+    // 3️⃣ FALLBACK 2 : Nodemailer
     const transporter = createTransporter();
     const mailOptions = {
       from: {
