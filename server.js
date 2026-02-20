@@ -1817,13 +1817,6 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Vous avez déjà voté.' });
       return;
     }
-    
-    // Anti-triche : vérifier que la cible est de l'équipe adverse
-    if (voter.team === target.team) {
-      console.log(`⚠️ Tentative de vote pour son équipe par ${voter.pseudo}`);
-      socket.emit('error', { message: 'Vous ne pouvez pas voter pour votre propre équipe.' });
-      return;
-    }
 
     // Enregistrer le vote selon l'équipe du votant
     if (voter.team === 'bleu') {

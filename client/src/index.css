@@ -517,14 +517,17 @@ button.secondary:hover {
     max-width: 100%;
   }
 
-  /* Bouton compte responsive */
+  /* Bouton compte responsive - taille tactile minimale 44px */
   .account-button {
     top: 15px;
     left: 15px;
-    width: 50px;
-    height: 50px;
-    font-size: 24px;
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
     border-width: 3px;
+    /* Touch target optimisé */
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Bandeau utilisateur responsive */
@@ -571,20 +574,20 @@ button.secondary:hover {
   }
 
   h1 {
-    font-size: 42px;
+    font-size: 46px;
     letter-spacing: 3px;
     margin-bottom: 15px;
     line-height: 1.1;
   }
 
   .tagline {
-    font-size: 16px;
+    font-size: 18px;
     letter-spacing: 3px;
     margin-bottom: 25px;
   }
 
   h2 {
-    font-size: 24px;
+    font-size: 26px;
     letter-spacing: 2px;
     margin-bottom: 15px;
   }
@@ -631,16 +634,21 @@ button.secondary:hover {
   }
 
   input {
-    padding: 14px 16px;
-    font-size: 15px;
+    padding: 16px 18px;
+    font-size: 17px;
     margin-bottom: 14px;
+    /* Empêcher le zoom automatique sur iOS */
+    -webkit-text-size-adjust: 100%;
   }
 
   button {
-    padding: 16px 30px;
-    font-size: 16px;
+    padding: 18px 32px;
+    font-size: 18px;
     letter-spacing: 1px;
     margin-bottom: 12px;
+    /* Touch target minimal 44px */
+    min-height: 56px;
+    touch-action: manipulation;
   }
 
   .game-code {
@@ -716,15 +724,17 @@ button.secondary:hover {
     padding: 5px;
   }
 
-  /* Bouton compte mobile */
+  /* Bouton compte mobile - touch target 48px minimum */
   .account-button {
     top: 10px;
     left: 10px;
-    width: 45px;
-    height: 45px;
-    font-size: 22px;
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
     border-width: 3px;
     box-shadow: 0 0 0 2px #E8D5B7, 0 4px 12px rgba(0,0,0,0.3);
+    min-width: 48px;
+    min-height: 48px;
   }
 
   /* Bandeau utilisateur mobile */
@@ -769,7 +779,7 @@ button.secondary:hover {
   }
 
   h1 {
-    font-size: 32px;
+    font-size: 36px;
     letter-spacing: 2px;
     margin-bottom: 12px;
   }
@@ -779,13 +789,13 @@ button.secondary:hover {
   }
 
   .tagline {
-    font-size: 14px;
+    font-size: 16px;
     letter-spacing: 2px;
     margin-bottom: 20px;
   }
 
   h2 {
-    font-size: 20px;
+    font-size: 22px;
     letter-spacing: 1px;
   }
 
@@ -838,21 +848,26 @@ button.secondary:hover {
   }
 
   input {
-    padding: 12px 14px;
-    font-size: 14px;
+    padding: 14px 16px;
+    font-size: 16px;
     margin-bottom: 12px;
     border-width: 2px;
+    /* Empêcher le zoom iOS sur les inputs */
+    -webkit-text-size-adjust: 100%;
   }
 
   button {
-    padding: 14px 24px;
-    font-size: 16px;
+    padding: 16px 26px;
+    font-size: 18px;
     letter-spacing: 1px;
     margin-bottom: 10px;
     border-width: 2px;
     box-shadow: 
       0 4px 0 #1a0f0a,
       0 6px 10px rgba(0,0,0,0.3);
+    /* Touch target minimum */
+    min-height: 52px;
+    touch-action: manipulation;
   }
 
   button:hover {
