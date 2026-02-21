@@ -5,7 +5,7 @@ import Login from './Login';
 import Register from './Register';
 import AccountMenu from './AccountMenu';
 
-function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
+function Home({ createGame, joinGame, onViewProfile, onLoginSuccess, csrfToken }) {
     // Synchronisation utilisateur après modification du profil
     const handleUserUpdate = (updatedUser) => {
       setUser(updatedUser);
@@ -29,6 +29,10 @@ function Home({ createGame, joinGame, onViewProfile, csrfToken }) {
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setMode(''); // Return to main screen
+    // Appeler le callback du parent App.jsx pour reconnecter le socket
+    if (onLoginSuccess) {
+      onLoginSuccess(userData);
+    }
   };
 
   const handleLogout = () => {

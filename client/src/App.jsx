@@ -16,20 +16,33 @@ const API_URL = 'https://jeu-bleu-rouge.onrender.com';
 
 console.log('🔌 Connexion Socket.io vers:', SOCKET_URL);
 
-// ✅ SÉCURITÉ : Envoyer le token JWT si disponible
-const token = localStorage.getItem('token');
-const socket = io(SOCKET_URL, {
-  auth: {
-    token: token  // ✅ Envoi du token pour authentification
-  },
-  transports: ['websocket', 'polling'],
-  reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  reconnectionAttempts: 5
-});
+// ✅ SÉCURITÉ : Créer le socket (sera reconnecté avec le token après connexion)
+let socket = null;
 
-console.log('🔐 Socket.io', token ? 'avec authentification' : 'mode anonyme');
+function initSocket() {
+  const token = localStorage.getItem('token');
+  
+  if (socket) {
+    socket.disconnect();
+  }
+  
+  socket = io(SOCKET_URL, {
+    auth: {
+      token: token  // ✅ Envoi du token pour authentification
+    },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 5
+  });
+  
+  console.log('🔐 Socket.io', token ? 'avec authentification' : 'mode anonyme');
+  
+  return socket;
+}
+
+socket = initSocket();
 
 // Debug socket
 socket.onAny((event, ...args) => {
@@ -65,6 +78,67 @@ function App() {
       setShowTutorial(true);
     }
   }, []);
+
+  // 🔄 Fonction pour reconnecter le socket avec le nouveau token
+  const reconnectSocket = () => {
+    console.log('🔄 Reconnexion du socket avec le nouveau token...');
+    socket = initSocket();
+    
+    // Réattacher les gestionnaires d'événements
+    socket.onAny((event, ...args) => {
+      console.log('📡 Socket événement reçu:', event, args);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ Erreur de connexion Socket.io:', error);
+    });
+
+    socket.on('connect_timeout', () => {
+      console.error('⏱️ Timeout de connexion Socket.io');
+    });
+    
+    socket.on('connect', () => {
+      console.log('✅ Connecté au serveur (reconnexion)');
+      setIsConnected(true);
+    });
+
+    socket.on('error', (data) => {
+      setError(data.message || 'Une erreur est survenue');
+      setIsLoading(false);
+    });
+
+    socket.on('game_created', (data) => {
+      setGameCode(data.gameCode);
+      setScreen('LOBBY');
+      setError('');
+      setIsLoading(false);
+    });
+
+    socket.on('game_joined', (data) => {
+      setGameCode(data.gameCode);
+      setScreen('LOBBY');
+      setError('');
+      setIsLoading(false);
+    });
+
+    socket.on('update', (data) => {
+      setGameData(data);
+    });
+
+    socket.on('role_assigned', (data) => {
+      setMyRole(data);
+    });
+
+    socket.on('game_started', () => {
+      setScreen('GAME');
+      setError('');
+    });
+
+    socket.on('game_ended', (data) => {
+      setEndGameData(data);
+      setScreen('GAME_ENDED');
+    });
+  };
 
   // 🔐 Récupérer le token CSRF au démarrage
   useEffect(() => {
@@ -164,7 +238,14 @@ function App() {
     console.log('🎮 Création de partie...', { pseudo, realLifeInfo });
     setPseudo(pseudo);
     setIsLoading(true);
-    socket.emit('create_game', { pseudo, realLifeInfo });
+    
+    // Envoyer le userId si l'utilisateur est connecté
+    const gameData = { pseudo, realLifeInfo };
+    if (user && user._id) {
+      gameData.userId = user._id;
+    }
+    
+    socket.emit('create_game', gameData);
   };
 
   const joinGame = (code, pseudo, realLifeInfo) => {
@@ -185,6 +266,12 @@ function App() {
     setMyRole(null);
     setGameData(null);
     setEndGameData(null);
+  };
+
+  const handleLoginSuccess = (userData) => {
+    console.log('✅ Connexion réussie, reconnexion du socket...');
+    setUser(userData);
+    reconnectSocket();
   };
 
   return (
@@ -300,6 +387,7 @@ function App() {
           createGame={createGame} 
           joinGame={joinGame}
           onViewProfile={() => setScreen('PROFILE')}
+          onLoginSuccess={handleLoginSuccess}
           csrfToken={csrfToken}
         />
       )}
